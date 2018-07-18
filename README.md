@@ -51,16 +51,34 @@ OPTIONAL OUTPUT:
     % metinfo --> MATLAB Structure variable with Sounding Station Parameters and Indices for every
     % profile (for a extended description of indices, see HTML http://weather.uwyo.edu/upperair/indices.html).
     
-Downloaded data can be archived in one or any combination of following file formats -> CSV, NetCDF or MATLAB binary format (depending on optional input value pairs the data archive will have a generic name e.g. 'yyyymmdd_hh.csv', 'yyyymmdd.nc' or 'yyyymmdd.mat').
+Downloaded data can be archived in one or any combination of following file formats -> CSV, NetCDF or MATLAB binary format (depending on optional input value pairs the data archive will have a generic name e.g. `RS_Y[year1]-[year2]_M[month1]-[month2]_D[day1]-[day2]_H[hour1]-[hour2].nc` or `RS_Y[year1]-[year2]_M[month1]-[month2]_D[day1]-[day2]_H[hour1]-[hour2].mat`). For the case of CSV format one file per hour is created, therefore CSV format is suggested to use only with small datasets.
 
-The new generated file is saved by default in the following folder: `'../data/RASOBS/namestation/yyyy/'` or in the path specified by the `'outputpath'` option. 
+The new generated file is saved by default in the following folder: `'../data/RASOBS/namestation/yyyy/'` or in any other directory if specified by the `'outputpath'` option. 
 
-The units for the profile variables (columnwise) are stored as a member variable named UNITS in the optional structure output `metinfo`, i.e. 
+The variable name, description and units of the profile variables (columnwise) are stored as a member variable named `PROFILE_META` in the optional structure output `metinfo`, i.e. 
 
-    > metinfo.UNITS
-    ans = 
-    {'hPa',  'm', '°C', '°C', '%', 'g/kg', 'deg', 'knot', 'K', 'K','K'}
+    > metinfo.PROFILE_META{1:3}
+    ans =
+    {
+    [1,1] = PRES
+    [1,2] = Atmospheric Pressure
+    [1,3] = hPa
+    }
 
+    ans =
+    {
+    [1,1] = HGHT
+    [1,2] = Geopotential Height
+    [1,3] = m
+    }
+
+    ans =
+    {
+    [1,1] = TEMP
+    [1,2] = Temperature
+    [1,3] = °C
+    }
+    
 In case of storage in NetCDF format, the units are displayed as argument for every available variable.
 
 ### Description of the profile variables
@@ -72,7 +90,7 @@ Similrly a detailed description of the Radiosonde indices is provided by the Wyo
 http://weather.uwyo.edu/upperair/indices.html
 
 ## USAGE EXAMPLE
-This is an example to download data from the Station Norderney with station number '10113' for the year 2015, the months of Mai, June and July (`[5:7]`) and all available hours i.e. 00 and 12Z (`[0,12]`). The data will the then storaged in a NetCDF file in the default directory `../data/norderney/2015/05/`.
+This is an example to download data from the Station Norderney with station number '10113' for the year 2015, the months of Mai, June and July (`[5:7]`) and all available hours i.e. 00 and 12Z (`[0,12]`) and storaging the data as NetCDF file.
 
     >> [data,metinfo] = RASOBS_DOWNLOAD_DATA_RAW('10113',2015,[5:7],[1:31],[00,12],'netcdf',true);
     
@@ -81,7 +99,7 @@ This is an example to download data from the Station Norderney with station numb
     warning: Data from 07.27.2015_00UTC does not exist!
     warning: called from RASOBS_DOWNLOAD_DATA_RAW at line 175 column 21
     
-for the example above, the downloaded and storage took approximatelly 7 minutes with GNU Octave.
+for the example above, the downloaded and storage took approximatelly 2.7 minutes with GNU Octave.
 
     >> whos data
     Variables in the current scope:
@@ -95,7 +113,7 @@ for the example above, the downloaded and storage took approximatelly 7 minutes 
     ==== ====         ====                     =====  =====
         metinfo      1x1                      41013  struct
 
-
+The data will the then storaged in a NetCDF file in the default directory `../data/norderney/2015/` with a file name `RS_Y2015-2015_M05-05_D09-10_H00-12.nc`.
 
 (c) 2018 P. Saavedra Garfias, Geophysical Institute, UNIVERSITY OF BERGEN
 See LICENSE.TXT
