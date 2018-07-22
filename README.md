@@ -15,7 +15,7 @@ The Function can be used by calling one or any combinations of the following set
   
     > [data, {metinfo}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour,'netcdf',true);
   
-    > [data, {metinfo}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour,'csvfiel',true);
+    > [data, {metinfo}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour,'csvfile',true);
   
     > [data, {metinfo}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour,'matfile',true);
 
@@ -30,9 +30,9 @@ INPUT VARIABLES
     %           hour will accept any range of hours, but Wyoming University only has two radiosonde per day at 00 and 12Z.
 FOLLOWING OPTION INPUTS (keyword value pairs)
 
-    % 'netcdf', true/false --> whether to storage as NetCDF file (recomended for large datasets);
+    % 'netcdf', true/false --> whether to storage as NetCDF file (recomended for large datasets and portability);
     % 'csvfile', true/false --> whether to storage as CSV files (creates one file per hour, feasable for short datasets);
-    % 'matfile', true/false --> whether to storage as v7 MATLAB files;
+    % 'matfile', true/false --> whether to storage as v7 MATLAB files (recomended when use only with Matlab/Octave);
     % 'outputpath','/path_to/storage/' --> Dir where files are storaged (see below for default storage directory);
 
 Default options:
@@ -99,7 +99,7 @@ This is an example to download data from the Station Norderney with station numb
     warning: Data from 07.27.2015_00UTC does not exist!
     warning: called from RASOBS_DOWNLOAD_DATA_RAW at line 175 column 21
     
-for the example above, the downloaded and storage took approximatelly 2.7 minutes with GNU Octave.
+for the example above, the process to download and storage took approximatelly 2.7 minutes with GNU Octave.
 
     >> whos data
     Variables in the current scope:
@@ -113,7 +113,35 @@ for the example above, the downloaded and storage took approximatelly 2.7 minute
     ==== ====         ====                     =====  =====
         metinfo      1x1                      41013  struct
 
-The data will the then storaged in a NetCDF file in the default directory `../data/norderney/2015/` with a file name `RS_Y2015-2015_M05-05_D09-10_H00-12.nc`.
+The data will the then storaged in a NetCDF file in the default directory `../data/norderney/2015/` with a file name `RS_Y2015-2015_M05-07_D01-31_H00-12.nc`.
+
+## SIMPLE PLOTTING EXAMPLE
+To help visualize the downloaded Radiosonde data, a simple GNU Octave/Matlab script helps to navigate along the profiles.
+### For MAT binary files
+Run the script from workspace as follow:
+
+    >> RASOBS_GRAPH_DATA_RAW(data,{metinfo});
+and a file browser will pop-up to select a `.mat` file with the Radiosonde data, or when the data are alredy loaded as workspace variable, use
+   
+    >> RASOBS_GRAPH_DATA_RAW(data,{metinfo});
+where `data` is the structure variable with the profiles, and `metinfo` is the structure variable with the Radiosonde indexed (see above). The script creates a Figure as it is shown in the following screenshot:
+
+![](images/screenshot-2018-07-22_04-49.png)
+the top panel shows the profile and the bottom panel the time-series of the selected Radiosonde Indexes. By using the pop-up menus it is possible to change the variables to show, and by moving the horizontal slice it is possible to change the observation time.
+
+The profile is shown in color black for the selected time and for reference it also includes 2 profiles before (yellow and red) and 2 after (blue and cyan) which are indicated on the legend by T0-2, T0-1, etc. where T0 is the date and time indicated at the top of the figure, e.g. _16.5.2015 T0=00Z_ in the above figure.
+
+### For NetCDF files
+When the Radiosonde data has been storaged as NetCDF file, it can be easily visualized by any software, for a quick peak `ncview` can be used
+
+    /home/user:~/wyorasobs/data/2015> ncview RS_Y2015-2015_M05-07_D01-31_H00-12.nc &
+and by selecting any profile variable a 2D time series can be easily plotted, for instance for the temperature variable `TEMP`
+
+### For CSV Files
+The visualization for the .csv files is not supported.
+
+
+
 
 (c) 2018 P. Saavedra Garfias, Geophysical Institute, UNIVERSITY OF BERGEN
 See LICENSE.TXT
