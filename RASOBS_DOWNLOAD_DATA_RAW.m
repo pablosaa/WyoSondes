@@ -1,4 +1,4 @@
-% [data, {metinfo}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour, [OPTIONALS]);
+% [data, metinfo, metadata] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour, [OPTIONALS]);
 % This function gets the 'DATA_raw' of the soundings (raob) from the
 % Wyoming University internet site (http://weather.uwyo.edu);
 % INPUT
@@ -46,8 +46,8 @@ csvflag = false;
 matflag = false;
 PATH_DAT = [];
 
-if ~ismember(nargout,[1,2]),
-    error('Output variables needs to be at least 1.');
+if nargout>3,
+    error('Maximum three Output variables are needed. See help!');
 end
 
 if ismember(nargin,[5,7,9,11]),
@@ -85,74 +85,16 @@ if strcmpi(stationname,'Tallinn')==1;
 end;
 
 %% Defining variable names:
-NameIndices={'OBST','SLAT','SLON','SELV','SHOW','LIFT','LFTV',...
-             'SWET','KINX','CTOT','VTOT','TTOT','CAPE',...
-             'CAPV','CINS','CINV','EQLV','EQTV','LFCT',...
-             'LFCV','BRCH','BRCV','LCLT','LCLP','MLTH',...
-             'MLMR','THTK','PWAT'};
+metadata = WyoRS_metadata();
+ProfileMeta = metadata.PROFILE;
+NameIndices = metadata.RSINDICES(:,1);
+DescriptionIndices = metadata.RSINDICES(:,2);
+UnitsIndices = metadata.RSINDICES(:,3);
 
-DescriptionIndices={'Observation time',...
-                    'Station latitude',...
-                    'Station longitude',...
-                    'Station elevation',...
-                    'Showalter index',...
-                    'Lifted index',...
-                    'LIFT computed using virtual temperature',...
-                    'SWEAT index',...
-                    'K index',...
-                    'Cross totals index',...
-                    'Vertical totals index',...
-                    'Totals totals index',...
-                    'Convective Available Potential Energy',...
-                    'CAPE using virtual temperature',...
-                    'Convective Inhibition',...
-                    'CINS using virtual temperature',...
-                    'Equilibrium level',...  % (hPa)
-                    'Equilibrium level using virtual temperature',...
-                    'Level of Free Convection',... % (hPa)
-                    'LFCT using virtual temperature',...
-                    'Bulk Richardson Number',...
-                    'Bulk Richardson Number using CAPV',...
-                    'Temp [K] of the Lifted Condensation Level',...
-                    'Pres [hPa] of the Lifted Condensation Level',...
-                    'Mean mixed layer potential temperature',...
-                    'Mean mixed layer mixing ratio',...
-                    '1000 hPa to 500 hPa thickness',...
-                    'Precipitable water [mm] for entire sounding'
-                   };
-
-UnitsIndices={'[YYMMDD.HH]',... % Obs time
-              'deg North',...
-              'deg East',...
-              'm. a.g.l.',...
-              '°C',... % ?
-              '°C',... % Lifted Index
-              '°C',...
-              '[]',... % SWEAT index
-              '°C',.... % K-index
-              '°C',...  % Corss totals
-              '°C',...  % vertical totals
-              '°C',...  % Total totals
-              'J/kg',...  % CAPE
-              'J/kg',...  % CAPEV
-              'J/kg',...  % Conv. Inhibition
-              'J/kg',...  % Conv. Inhibition Virtual T
-              'hPa',...  % Equi. level
-              'hPa',...  % Equi. levet virtual T.
-              'hPa',...  % level free conv.
-              'hPa',...  % level free conv. virtual T.
-              '[]',...  % Richardson Num.
-              '[]',...  %  Richardson Num virtual T.
-              'K',...  % T. Lifted conden. level
-              'hPa',... %  P. Lifted conden. level
-              'K',...  % Mean mixed lay. P.T.
-              'g/kg',...  % Mean mixes lay. M.R.
-              'm',...  % ??
-              'mm',... % total Precip water 
-             };
 %% Initializing variables:
 INDIPAR = zeros(length(NameIndices),1);
 idx_hr = 0;
+
 
 %% DOWNLOAD DATA FROM UNIVERSITY OF WYOMING's RADIOSONDE REPOSITORY
 for YEAR=year;
@@ -169,6 +111,7 @@ for YEAR=year;
                 url = ['http://weather.uwyo.edu/cgi-bin/sounding?region=europe&TYPE=TEXT%3ALIST&YEAR='...
                     yyyy '&MONTH=' mm '&FROM=' dd hh '&TO=' dd hh '&STNM=' station];
                 html = urlread(url);
+                pause(3);
                 % Finding Title of HTML database
                 tit  = cell2mat(regexpi(html,{'<H2>','</H2>'}));
                 if isempty(tit),
@@ -208,16 +151,31 @@ for YEAR=year;
                 repidx = repmat(ll(1:end-1),10,1)' +...
                          repmat(7*[1:10]+1,n,1);
                 tmpstr(repidx)=',';  % including delimiter for blank fields
-                values = textscan(tmpstr,...
-                                  '%f%f%f%f%f%f%f%f%f%f%f',...
-                                  'Delimiter',',',...
-                                  'HeaderLines',1); %,'CollectOutput',true);
+                                
+% $$$                 values = arrayfun(@(k) textscan(tmpstr(ll(k)+1:ll(k+1)), ...
+% $$$                                   '%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f',...
+% $$$                                                 'CollectOutput',true,...
+% $$$                                                 'Whitespace','',...
+% $$$                                                 'EmptyValue',NaN,...
+% $$$                                                 'Delimiter',','),...
+% $$$                                   [1:5],'UniformOutput',false);
+% $$$                                   
+                tmpvalues = textscan(tmpstr,...
+                                     '%s%s%s%s%s%s%s%s%s%s%s',...
+                                     'Delimiter',',',...
+                                     'EndOfLine','\n',...
+                                     'Whitespace','',...
+                                     'HeaderLines',1,...
+                                     'EmptyValue',NaN);
 
+                values = cellfun(@(x) str2double(x), tmpvalues,...
+                                 'UniformOutput',false);
                 n = length(names{1});
                 % data is a structure with all variables in:
                 data(idx_hr) = cell2struct(values,...
                                    names{1},2);
                 
+                clear tmpvalues, values;
                 % NOTE tt.HGHT_m=repmat({data.HGHT_m},1,2);
                 % ---------------------------------------------
                 % the second <PRE> block contains the global info:
@@ -246,7 +204,11 @@ for YEAR=year;
                 if exist(PATH_DAT,'dir');
                 else mkdir(PATH_DAT);
                 end;
-                file_name = [PATH_DAT 'RS_' yyyy mm dd];
+
+                file_name = [PATH_DAT 'RS_'...
+                             sprintf('Y%04d-%04d_M%02d-%02d_D%02d-%02d_H%02d-%02d',...
+                                     year([1,end]),month([1,end]),...
+                                     day([1,end]),hour([1,end]))];
                 %% SAVE DATA as CSV?
                 if csvflag,
                     disp('Storing CSV file...');
@@ -265,39 +227,51 @@ for YEAR=year;
     end;   % end over months
 end;   % end over years
 
+    
     %% Creating output variables:
-    varargout{1} = data;
-    if nargout==2,
-        qq=arrayfun(@(i) sprintf('metvar.%s=INDIPAR(%d,:);',...
-                                 NameIndices{i},i),...
-                    [1:length(NameIndices)],'UniformOutput',false);                      
-        cellfun(@eval, qq);
-        metvar.PROFILE_UNITS = units{1};
-        varargout{2}=metvar;
+    qq=arrayfun(@(i) sprintf('metvar.%s=INDIPAR(%d,:);',...
+                             NameIndices{i},i),...
+                [1:length(NameIndices)],'UniformOutput',false);                      
+    cellfun(@eval, qq);
+     
+    % passing output variables to workspace:
+    for i=1:nargout,
+        outputvar = {'data','metvar','metadata'};
+        if i>3,
+            warning('too many output variables! Three are max.');
+            break;
+        end
+        eval(['varargout{i} = ' outputvar{i} ';']);
     end
+
     %% SAVE DATA as NetCDF or MAT?
     if matflag,
         disp('Storing MAT file...');
-        save([file_name '.mat'],'-v7','data','metvar');
+        save([file_name '.mat'],'-v7','data','metvar','metadata');
     end
     if ncdfflag,
         if exist('OCTAVE_VERSION','builtin'),
             pkg load netcdf;
-            disp('Sorry... NETCDF option for Octave Not yet implemented! ;) ');
-        else
-            disp('Work in process...');
+            disp('NETCDF package loaded... ');
         end
         nsonde = length(data);
         ncfile = [file_name '.nc'];
         for i=1:length(names{1}),
             nccreate(ncfile,names{1}{i},...
                      'Dimensions',{'nsonde',nsonde,'levels',Inf},...
-                     'FillValue',NaN,'Format','classic');
+                     'FillValue',NaN,'Format','netcdf4');
+            tmp = strfind(names{1}{i},ProfileMeta);
+            idxtmp = find(arrayfun(@(k) ~isempty(tmp{k,1}),...
+                                   [1:length(ProfileMeta)]));
             for j=1:nsonde,
                 eval(['ncwrite(ncfile,names{1}{i},transpose(data(j).'...
                       names{1}{i} '),[j,1]);']);
-                ncwriteatt(ncfile,names{1}{i},'units', units{1}{i});
             end
+            ncwriteatt(ncfile,names{1}{i},'ShortName', ProfileMeta{idxtmp,1});
+            ncwriteatt(ncfile,names{1}{i},'LongName', ProfileMeta{idxtmp,2});
+            ncwriteatt(ncfile,names{1}{i},'units', ProfileMeta{idxtmp,3});
+                %units{1}{i});
+
         end  % end over variable names
         for i=1:length(NameIndices),
             if any([strcmp(NameIndices{i},'SLAT'),...
