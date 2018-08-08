@@ -1,4 +1,4 @@
-# WyoRASOBS (Wyoming University RAdiosondeS OBSservations)
+# WyoSondes (Wyoming University Radiosondes Obsservations)
 
 ## A GNU/Octave & MATLAB Automatic fetch and storage interface for Radiosonde data provided by the University of Wyoming
 
@@ -44,11 +44,12 @@ Default options:
 
 OUTPUT VARIABLES:
 
-    % data --> MATLAB Structure variable containing the Radiosonde data and related information.
-    % In case of unsuccessful downloading (e.g. hour 10 doesn't exist) it returns an empty variable or skip that hour.
-OPTIONAL OUTPUT:
-
+    % data --> MATLAB Structure variable containing the Radiosonde data and related information. 
     % metvar --> MATLAB Structure variable with Sounding Station Parameters and Indices for every profile.
+In case of unsuccessful downloading (e.g. hour 10 doesn't exist) it returns an empty variable or skip that hour.
+
+OPTIONAL OUTPUT:
+    
     % metadata --> structure with two fields containing the METADATA describing every profile and Indice variable (for a extended description of indices, see HTML http://weather.uwyo.edu/upperair/indices.html)
  
 Downloaded data can be archived in one or any combination of following file formats -> CSV, NetCDF or MATLAB binary format (depending on optional input value pairs the data archive will have a generic name e.g. `RS_Y[year1]-[year2]_M[month1]-[month2]_D[day1]-[day2]_H[hour1]-[hour2].nc` or `RS_Y[year1]-[year2]_M[month1]-[month2]_D[day1]-[day2]_H[hour1]-[hour2].mat`). For the case of CSV format one file per hour is created, therefore CSV format is suggested to use only with small datasets.
@@ -57,8 +58,8 @@ The new generated file is saved by default in the following folder: `'../data/RA
 
 The variable name, description and units of the profile variables (columnwise) are stored as a member variable named `PROFILE_META` in the optional structure output `metvar`, i.e. 
 
-    >> metvar.PROFILE_META{1:3}
-   ans =
+    >> metvar.PROFILE(1:3,:)
+	ans =
 	{
 	  [1,1] = PRES
 	  [2,1] = HGHT
@@ -72,7 +73,7 @@ The variable name, description and units of the profile variables (columnwise) a
 	}
 
     >> metadata.RSINDICES(1:3,:)
-    ans =
+	ans =
 	{
 	  [1,1] = OBST
 	  [2,1] = SLAT
@@ -130,11 +131,14 @@ To help visualize the downloaded Radiosonde data, a simple GNU Octave/Matlab scr
 ### For MAT binary files
 Run the script from workspace as follow:
 
-    >> RASOBS_GRAPH_DATA_RAW;
+	>> RASOBS_GRAPH_DATA_RAW;
 and a file browser will pop-up to select a `.mat` file with the Radiosonde data, or when the data are alredy loaded as workspace variable, use
    
-    >> RASOBS_GRAPH_DATA_RAW(data,metvar);
+	>> RASOBS_GRAPH_DATA_RAW(data,metvar);
 where `data` is the structure variable with the profiles, and `metvar` is the structure variable with the Radiosonde indexed (see above). The script creates a Figure as it is shown in the following screenshot:
+
+	>> ha = RASOBS_GRAPH_DATA_RAW(data,metvar);
+where `ha` is the structure of handles for the graphical elements, i.e. plot lines, axes, GUIs, etc.
 
 ![](images/screenshot-2018-08-07_17-27.png)
 the top panel shows the profile and the bottom panel the time-series of the selected Radiosonde Indexes. By using the pop-up menus it is possible to change the variables to show, and by moving the horizontal slice it is possible to change the observation time.
