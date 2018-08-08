@@ -1,2 +1,2 @@
 * screenshot-2018-07-22_04-49.png  Screenshot of the visualization script under GNU Octave.
-* 
+* screenshot-2018-08-09_01-22.png  New Screenshot of the GUI visualization script under GNU Octave.
