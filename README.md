@@ -155,7 +155,7 @@ where `data` is the structure variable with the profiles, and `metvar` is the st
 ```
 where `ha` is the structure of handles for the graphical elements, i.e. plot lines, axes, GUI's controls, etc.
 
-![](images/screenshot-2018-08-07_17-27.png)
+![](images/screenshot-2018-08-09_01-22.png)
 the top panel shows the vertical profile or the selected variable (default `TEMP`), the middle panel shows the time-series of vertical profiles in a 2D surface plot (same variable as the top panel but only 10km height is considered) and in the bottom panel the time-series of the selected Radiosonde Indexes (default `CAPE`).
 
 By using the pop-up menus it is possible to select other variables to show, and by moving the horizontal slice on top it is possible to change the observation time, alternatively the **`pick-up T0`** buttom allows to select a time point with the cursor from any of the two time-series plots.
