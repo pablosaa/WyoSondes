@@ -96,9 +96,15 @@ tmp = get(ha.ax(1),'Position').*[1 1 0.75 1];
 i = [nspan:-1:1];  % to get the middle line to the top
 i(span+1) = '';
 i = [span+1, i];   % putting the middle line to the top
+if exist('OCTAVE_VERSION','builtin'),
+  objarray = cell2mat(ha.hh(i));
+else
+  objarray = [ha.hh{i}]';
+end
+
 set(ha.ax(1),'YLim',[-.05 maxz],'Box','on','YGrid','on',...
              'FontSize',FoSi,'Position',tmp,'Color',0.7*[1 1 1],...
-             'Children',cell2mat(ha.hh(i)));
+             'Children',objarray);
 legend('show');
 set(findobj('Tag','legend'),'FontSize',FoSi,'Color','none');
 
@@ -112,7 +118,7 @@ else
 end
 shading flat;
 axis tight;
-tmp = get(ha.ax(2),'Position').*[1 0.9 1 1.04]; %1.1];
+tmp = get(ha.ax(2),'Position').*[1 0.9 1 1.04];
 ha.cob = colorbar;
 set(ha.ax(2),'Position',tmp,'XLim',Tnumobs([1 end]),'XTickLabel',[]);
 set(ha.cob,'Position',[tmp(1)+tmp(3)+0.005 tmp(2) 0.025 tmp(4)],...

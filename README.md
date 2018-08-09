@@ -4,7 +4,7 @@
 
 This is a simple GNU/Octave and MATLAB friendly function to fetch radiosonde data from the publich repository hosted by the University of Wyoming.
 
-This repository has been mainly developed and intensily used with GNU/Octave v4.4.0 under Linux OpenSuse distribution. Some testing has been done for Matlab R2016b (the one I have at office), but some issues might appear with the latest Matlab versions, so any feedbacks are welcome.
+This repository has been mainly developed and intensily used with GNU/Octave v4.4.0 under Linux OpenSuse distribution. Some testing has been done for Matlab R2016a (the one I have at office), but some issues might appear with the latest Matlab versions, so any feedbacks are welcome.
 
 ### Description
 This GNU Octave/MATLAB function gets the DATA of the soundings (raob) from the Wyoming University internet site (http://weather.uwyo.edu)
@@ -140,6 +140,8 @@ The data will the then storaged in a NetCDF file in the default directory `../da
 ## SIMPLE PLOTTING EXAMPLE
 To help visualize the downloaded Radiosonde data, a simple GNU Octave/Matlab script helps to navigate along the profiles. This script is more useful when a large number of profiles are present, for less than 5 or single profiles it isn't worth it.
 
+The visualization script has been tested and used under GNU/Octave v4.4.0 and Matlab R2016a.
+
 ### For MAT binary files
 Run the script from workspace as follow:
 ```
@@ -168,6 +170,7 @@ When the Radiosonde data has been storaged as NetCDF file, it can be easily visu
 /home/user:~/wyorasobs/data/2015> ncview RS_Y2015-2015_M05-07_D01-31_H00-12.nc &
 ```
 and by selecting any profile variable a 2D time series can be easily plotted, for instance for the temperature variable `TEMP`
+![](images/Screenshot%20from%202018-08-09%2013-56-08.png)
 
 ### For CSV Files
 The visualization for the .csv files is not supported.
