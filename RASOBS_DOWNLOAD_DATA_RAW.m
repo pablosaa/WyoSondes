@@ -107,7 +107,7 @@ for YEAR=year;
                 mm = sprintf('%02d',MONTH);
                 dd = sprintf('%02d',DAY);
                 hh = sprintf('%02d',HOUR);
-                timestamp = sprintf('%s.%s.%s_%sUTC',mm,dd,yyyy,hh);
+                timestamp = sprintf('%s.%s.%s_%sUTC',dd,mm,yyyy,hh);
                 url = ['http://weather.uwyo.edu/cgi-bin/sounding?region=europe&TYPE=TEXT%3ALIST&YEAR='...
                     yyyy '&MONTH=' mm '&FROM=' dd hh '&TO=' dd hh '&STNM=' station];
                 html = urlread(url);
@@ -185,17 +185,18 @@ for YEAR=year;
                                      'HeaderLines',1,...
                                      'CollectOutput',false);
                 description = globaltmp{1};  %globalinfo{idx_hr}.description
-                
-                % Changing Date format from "YYMMDD/hhmm"->"YYMMDD.hhmm"
-                glovalues = strrep(globaltmp{2},'/','.');
-                tmp = sscanf(glovalues{2},'%06d.%02d%02d');
+                glovalues = globaltmp{2};
+		
+              % Changing Date format from "YYMMDD/hhmm"->"YYMMDD.hhmm"
+		idxtmp = find(strcmp(description,'Observation time'));
+                tmp = sscanf(strrep(glovalues{idxtmp},'/','.'),'%06d.%02d%02d');
                 tmp = tmp(1)+[1/24 1/3600]*tmp(2:3);
                 % Finding which parameters are present:
                 [tt,ii] = ismember(description,DescriptionIndices);
                 % Filling values for parameter indices:
                 INDIPAR(:,idx_hr) = NaN;
                 INDIPAR(ii(tt),idx_hr)=cellfun(@str2num,glovalues(tt));
-                INDIPAR(ii(2),idx_hr) = tmp;
+                INDIPAR(ii(idxtmp),idx_hr) = tmp;   % insert the 'Observation time'
                 if isempty(PATH_DAT),
                     PATH_DAT = ['../data/RASOBS/'...
                                 lower(stationname) '/' ...
