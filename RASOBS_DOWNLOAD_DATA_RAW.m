@@ -8,12 +8,16 @@
     % day   --> (numeric) Range for Day of the date we want to download;
     % hour  --> (numeric) Range for Hour of the date we want to download [00,12];
     % -- FOLLOWING OPTION INPUTS (keyword value pairs)
-    % 'netcdf', true/false --> whether to storage as NetCDF file;
-    % 'csvfile', true/false --> whether to storage as CSV files;
-    % 'matfile', true/false --> whether to storage as v7 MATLAB files;
-    % 'outputpath','/path_to/storage/' --> Dir where files are storaged;
+    % 'netcdf', logical true/false --> whether to storage as NetCDF file;
+    % 'csvfile', logical true/false --> whether to storage as CSV files;
+    % 'matfile', logical true/false --> whether to storage as v7 MATLAB files;
+    % 'outputpath', string '/path_to/storage/' --> Dir where files are
+    % storaged;
+    % 'waiting', numeric # -> seconds to wait before next download;
     % -- Default options:
-    % 'matfile'->true, 'outputpath'->'../data/RASOBS/station/yyyy/', 'csvfile'->false, 'netcdf'->false.
+    % 'matfile'->true,
+    % 'outputpath'->'../data/RASOBS/station/yyyy/',
+    % 'csvfile'->false, 'netcdf'->false, and 'waiting'->3
 % OUTPUT
     % data --> Structure data containing the RS data and information.
     % In case of unsuccessful downloading it retures empty variable.
@@ -45,12 +49,13 @@ ncdfflag = false;
 csvflag = false;
 matflag = false;
 PATH_DAT = [];
+TAKE_A_BREAK = 4;  % default waiting between downloads 4 secs.
 
 if nargout>3,
     error('Maximum three Output variables are needed. See help!');
 end
 
-if ismember(nargin,[5,7,9,11]),
+if ismember(nargin,[5,7,9,11,13]),
     % only two additional options are available
     for i=1:2:length(varargin),
         switch (lower(varargin{i})),
@@ -66,6 +71,11 @@ if ismember(nargin,[5,7,9,11]),
             csvflag = logical(varargin{i+1});
           case {'matfile'},
             matflag = logical(varargin{i+1});
+          case {'waiting'},
+            TAKE_A_BREAK = min(20,max(3,str2num(varargin{i+1})))
+            if isempty(TAKE_A_BREAK),
+                error(['waiting needs to be a number!']);
+            end
           otherwise,
             error(['Argument name "' varargin{i} '" not available!']);
         end
@@ -111,7 +121,7 @@ for YEAR=year;
                 url = ['http://weather.uwyo.edu/cgi-bin/sounding?region=europe&TYPE=TEXT%3ALIST&YEAR='...
                     yyyy '&MONTH=' mm '&FROM=' dd hh '&TO=' dd hh '&STNM=' station];
                 html = urlread(url);
-                pause(3);
+                pause(TAKE_A_BREAK);
                 % Finding Title of HTML database
                 tit  = cell2mat(regexpi(html,{'<H2>','</H2>'}));
                 if isempty(tit),
