@@ -72,7 +72,7 @@ if ismember(nargin,[5,7,9,11,13]),
           case {'matfile'},
             matflag = logical(varargin{i+1});
           case {'waiting'},
-            TAKE_A_BREAK = min(20,max(3,str2num(varargin{i+1})))
+            TAKE_A_BREAK = min(20,max(3,varargin{i+1}));
             if isempty(TAKE_A_BREAK),
                 error(['waiting needs to be a number!']);
             end
