@@ -37,6 +37,7 @@ FOLLOWING OPTION INPUTS (keyword value pairs)
 % 'csvfile', true/false --> whether to storage as CSV files (creates one file per hour, feasable for short datasets);
 % 'matfile', true/false --> whether to storage as v7 MATLAB files (recomended when use only with Matlab/Octave);
 % 'outputpath','/path_to/storage/' --> Dir where files are storaged (see below for default storage directory);
+% 'waiting', numeric seconds --> Number of seconds to wait between fetching profiles (default 3 secs.)
 ```
 Default options:
 ```
