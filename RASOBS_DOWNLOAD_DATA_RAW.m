@@ -238,6 +238,14 @@ for YEAR=year;
     end;   % end over months
 end;   % end over years
 
+    %% Checking whether any data has been downloaded:
+    if(idx_hr==0),
+        warning('No Profile could have been found!');
+        for i=1:nargout,
+            varargout{i} = [];
+        end
+        return;
+    end
     
     %% Creating output variables:
     qq=arrayfun(@(i) sprintf('metvar.%s=INDIPAR(%d,:);',...
