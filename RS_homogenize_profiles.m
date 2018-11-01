@@ -24,14 +24,18 @@ H0 = [[10:20:1500],...
       [1550:50:3000],...
       [3200:200:topH]];    % layer to homoginize [m]
 
-% P0 = 1024; % Reference Pressure [kPa]
-% M = 29; % Molar mass [gr/mol]
-% g = 9.807; % gravity acceleration [m/s^2]
-% R = 8.31446; % Molar gas constant [J/mol/K]
-% T0 = 280;   % Initial Ambient Temperature  [K]
+
+P0 = 1024; % Reference Pressure [kPa]
+Pa = [[P0:-1.1:850],[845:-5:760],[740:-20:600],[550:-50:350]];
+M = 28.8; % Molar mass [gr/mol]
+g = 9.807; % gravity acceleration [m/s^2]
+R = 8.31446; % Molar gas constant [J/mol/K]
+T0 = 290;   % Initial Ambient Temperature  [K]
 % Lr = 6.5;   % Temperature lapse-rate [K/km]
 %
 % H0 = R*T0/M/g*log(P0./Pa)./(1+R*Lr/M/g*log(P0./P));
+
+H0 = R*T0/M/g*log(P0./Pa);  % standard Atmosphere
 
 nlay = length(H0); % Number of layers for the homoginized grid
 
@@ -266,7 +270,7 @@ for n_y = 1:mxN_y,
             ncwriteatt(ncfile,'/','grid_y',NaN);
             ncwriteatt(ncfile,'/','Origin',filen);
             ncwriteatt(ncfile,'/','Creation',datestr(today));
-            ncwriteatt(ncfile,'/','Contact','pablo.saa@uib.no');
+            ncwriteatt(ncfile,'/','Contact','Pablo.Saavedra@uib.no');
 
     end  % end over number of files (index f)
 end  % end over years (index n_y)
