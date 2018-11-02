@@ -25,7 +25,7 @@ H0 = [[10:20:1500],...
       [3200:200:topH]];    % layer to homoginize [m]
 
 
-P0 = 1024; % Reference Pressure [kPa]
+P0 = 1013; % Reference Pressure [hPa]
 Pa = [[P0:-1.1:850],[845:-5:760],[740:-20:600],[550:-50:350]];
 M = 28.8; % Molar mass [gr/mol]
 g = 9.807; % gravity acceleration [m/s^2]
@@ -35,7 +35,7 @@ T0 = 290;   % Initial Ambient Temperature  [K]
 %
 % H0 = R*T0/M/g*log(P0./Pa)./(1+R*Lr/M/g*log(P0./P));
 
-H0 = R*T0/M/g*log(P0./Pa);  % standard Atmosphere
+H0 = 1e3*R*T0/M/g*log(P0./Pa);  % standard Atmosphere altitude [m]
 
 nlay = length(H0); % Number of layers for the homoginized grid
 
@@ -79,29 +79,47 @@ y = 0;
 % Setting up the files to run:
 %% INPATH = '~/GFI/data/RASOBS/norderney/2015/';
 OUTPATH = '/home/pga082/GFI/data/RT/';
-STATIONS = {'polargmo','norderney'};
-mxN_x = length(STATIONS);
-years = [2015,2015];
-mxN_y = length(unique(years));
-outfilen = sprintf('RS_Y%04d-%04d_4RT',years(1),years(end));
+
+% The cell string 'STATIONS' must be organized according to
+% the (Longitude,Latitude) grid cell desired into the NetCDF file.
+% e.g. When only one file is specified, then the grid as only one point (1,1).
+STATIONS = {'polargmo';'enbj'};
+
+% The Database is orginized following the WRF-grid as close as possible:
+% * (x_n, y_n): are the coordinates of the specified stations, when only
+% one station is introduced then the dimension xn and yn is 1.
+% * time: is the time converted to year,month,day,hour and it is
+% sorted according to the readed from the directory there the files
+% are located: A = dir([fullfile(INPATH, num2str(years)), '*.mat'])
+
+[mxN_x, mxN_y] = size(STATIONS);
+years  = [2014,2015];
+N_year = length(unique(years));
+
+% Defining NetCDF and ASCII output file:
+outfilen = sprintf('RS_Y%04d-%04d_x%03dy%03d_RT',years(1),years(end),mxN_x,mxN_y);
 if exist([OUTPATH outfilen '.nc']),
     disp('Deleting... NetCDF file');
     delete([OUTPATH outfilen '.nc']);
 end
 
-for n_x=1:mxN_x,
-INPATH = ['/home/pga082/GFI/data/RASOBS/' STATIONS{n_x} '/'];
-for n_y = 1:mxN_y,
-    A = dir(fullfile(INPATH, num2str(years(n_y)), '*.mat'));
-    N_f = length(A);
-    for f = 1:N_f,
-        filen = fullfile(INPATH,num2str(years(n_y)), A(f).name);
+% Starting to read over number of Stations and years:
+for n_x = 1:mxN_x,    % number of stations
+    for n_y = 1:mxN_y,    % number of years
+        Last_obs = 0;
+        for i_year=1:N_year,
+        INPATH = ['/home/pga082/GFI/data/RASOBS/'...
+                  STATIONS{n_x,n_y} '/' num2str(years(i_year))];
+        A = dir(fullfile(INPATH, '*.mat'));
+        N_f = length(A);
+        for f = 1:N_f,       % number of files in directory
+            filen = fullfile(INPATH, A(f).name);
 
         % loading the data:
         disp(['Loading... ' filen]);
         load(filen);
         % names = regexprep(fieldnames(data),'HGHT','CLOUD');
-        nobs  = length(data);
+        nobs  = length(data)
 
         QCflag = int8(zeros(nobs,1));   % Quality Control flag 8 bits:
                                         % bit 1: height reaches at-least 10km
@@ -148,8 +166,8 @@ for n_y = 1:mxN_y,
         LOCVAR(2) = metvar.SLAT(1);
         LOCVAR(3) = metvar.SLON(1);
         
-        % Homogenazing the layes for all profiles:
         idxobs=0;      % index for only quality passed profiles
+        % Homogenazing the layes for all profiles:
         for i=1:nobs,
             if QCflag(i) ~= 15,  % 15 corresponds to all Quality test passed
                 continue;
@@ -160,9 +178,8 @@ for n_y = 1:mxN_y,
             month = fix(metvar.OBST(i)/1e2) - yy*1e2;
             day   = fix(metvar.OBST(i)) - yy*1e4 - month*1e2;
             hour = 24*(metvar.OBST(i)-fix(metvar.OBST(i)));
-            ndate(idxobs,:) = [2000+yy month day hour];
+            ndate(idxobs,:) = [2000+yy, month, day, hour];
 
-            %n_x = n_x + 1;
             % Converting Temperature units from C to Kelvin:
             data(i).TEMP = data(i).TEMP+273.15;
 
@@ -200,12 +217,13 @@ for n_y = 1:mxN_y,
             fprintf(fp,'%6.3f %10.3f %10.3f %10.3f\n',...
                     metvar.SELV(i)/1e3,SURFVars(idxobs,:));
             
-            idxcol = [2,1,3,5,12,13,14,15,16];
+            idxcol = [2,1,3,5,12,13,14,15,16];   % index of
+                                                 % variables to store
             fprintf(fp,['%10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f ' ...
                         '%10.3f %10.3f\n'],transpose(ALLVARS(:,idxcol,idxobs)));
             %cellfun(@(k) fprintf(fp,'%10.3f',transpose(k(i,:))),layers_var);
 
-        end  % end over i: number of observations
+        end  % end over i: number of observations per File
 
             % Writing the first line in ASCII file
             frewind(fp);
@@ -219,14 +237,14 @@ for n_y = 1:mxN_y,
             
             % Writing 4-D variables in NetCDF file:
             for j=1:length(idxcol),
-                if n_x==1 & n_y==1,
+                if n_x==1 & n_y==1 & i_year==1,
                     nccreate(ncfile,wrf_varname{j},'Datatype','single',...
                              'Dimensions',{'xn',mxN_x, 'yn', mxN_y,'lev',nlay,'time',Inf}, ...
                              'Format','netcdf4','Deflate',true,'DeflateLevel',9,'FillValue',NaN);
                 end
                 ncwrite(ncfile,wrf_varname{j},...
                         shiftdim(squeeze(ALLVARS(:,idxcol(j),:)),-2),...
-                        [n_x n_y 1 1]);
+                        [n_x n_y 1 1+Last_obs]);
                 ncwriteatt(ncfile,wrf_varname{j},'short_name',nc_metadata{j,1});
                 ncwriteatt(ncfile,wrf_varname{j},'long_name',nc_metadata{j,2});
                 ncwriteatt(ncfile,wrf_varname{j},'units',nc_metadata{j,3});
@@ -234,13 +252,13 @@ for n_y = 1:mxN_y,
             
             % Writting 3-D variables in NetCDF file:
             for j=1:length(surface_names),
-                if n_x==1 & n_y==1,
+                if n_x==1 & n_y==1 & i_year==1,
                     nccreate(ncfile,wrf_surfname{j,1},'Datatype','single',...
                              'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf},'Format', ...
                              'netcdf4','Deflate',true,'DeflateLevel',9);
                 end
                 ncwrite(ncfile,wrf_surfname{j,1},shiftdim(SURFVars(:,j),-2),...
-                        [n_x n_y 1]);
+                        [n_x, n_y, 1+Last_obs]);
                 ncwriteatt(ncfile,wrf_surfname{j,1},'short_name',wrf_surfname{j,1});
                 ncwriteatt(ncfile,wrf_surfname{j,1},'long_name',wrf_surfname{j,2});
                 ncwriteatt(ncfile,wrf_surfname{j,1},'units',wrf_surfname{j,3});
@@ -248,11 +266,11 @@ for n_y = 1:mxN_y,
             
             % Writting 2-D variables in NetCDF file:
             for j=1:length(wrf_locname),
-                if n_x==1 & n_y==1,
+                if n_x==1 & n_y==1 & i_year==1,
                     nccreate(ncfile,wrf_locname{j,1},'Datatype','single',...
                              'Dimensions',{'xn',mxN_x,'yn',mxN_y});
                 end
-                ncwrite(ncfile,wrf_locname{j,1},LOCVAR(j),[n_x,n_y]);
+                ncwrite(ncfile,wrf_locname{j,1},LOCVAR(j),[n_x, n_y]);
                 ncwriteatt(ncfile,wrf_locname{j,1},'short_name',wrf_locname{j,1});
                 ncwriteatt(ncfile,wrf_locname{j,1},'long_name',wrf_locname{j,2});
                 ncwriteatt(ncfile,wrf_locname{j,1},'units',wrf_locname{j,3});
@@ -260,21 +278,34 @@ for n_y = 1:mxN_y,
             
             % Writting 1-D variables in NetCDF file:
             for j=1:4,
-                if n_x==1 & n_y==1,
+                if n_x==1 & n_y==1 & i_year==1,
                     nccreate(ncfile,date_name{j},'Datatype','single', ...
-                             'Dimensions',{'time',nobs});
+                             'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf});
                 end
-                ncwrite(ncfile,date_name{j},ndate(:,j));
+                ncwrite(ncfile,date_name{j},shiftdim(ndate(:,j),-2),[n_x, n_y, 1+Last_obs]);
             end
+            
+            
+            
             ncwriteatt(ncfile,'/','grid_x',NaN);
             ncwriteatt(ncfile,'/','grid_y',NaN);
-            ncwriteatt(ncfile,'/','Origin',filen);
+            %ncwriteatt(ncfile,'/','Origin',filen);
             ncwriteatt(ncfile,'/','Creation',datestr(today));
             ncwriteatt(ncfile,'/','Contact','Pablo.Saavedra@uib.no');
 
-    end  % end over number of files (index f)
-end  % end over years (index n_y)
-end % end over stations (index n_x)
+            Last_obs = Last_obs + idxobs
+            
+        end  % end over number of files (index f)
+        end   % end over years (index i_year)
+            % Writting database origin:
+            if n_x==1 & n_y==1,
+                nccreate(ncfile,'origin','Datatype','char',...
+                         'Dimensions',{'strlen',300,'xn',mxN_x,'yn',mxN_y});
+            end
+            
+            ncwrite(ncfile,'origin',transpose(filen),[1,n_x,n_y]);
+    end  % end over y station (index n_y)
+end % end over x station (index n_x)
 
     % ============ End of main function RS_homogenize_profiles =================
 
