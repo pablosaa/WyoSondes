@@ -255,7 +255,7 @@ end;   % end over years
      
     % passing output variables to workspace:
     for i=1:nargout,
-        outputvar = {'data','metvar','metadata'};
+        outputvar = {'data','metvar','metadata','stationname'};
         if i>3,
             warning('too many output variables! Three are max.');
             break;
@@ -266,7 +266,7 @@ end;   % end over years
     %% SAVE DATA as NetCDF or MAT?
     if matflag,
         disp('Storing MAT file...');
-        save([file_name '.mat'],'-v7','data','metvar','metadata');
+        save([file_name '.mat'],'-v7','data','metvar','metadata','stationname','station');
     end
     if ncdfflag,
         if exist('OCTAVE_VERSION','builtin'),

@@ -84,20 +84,21 @@ y = 0;
 %% INPATH = '~/GFI/data/RASOBS/norderney/2015/';
 OUTPATH = '/home/pga082/GFI/data/RT/';
 
-% The cell string 'STATIONS' must be organized according to
+
+%% The cell string 'STATIONS' must be organized according to
 % the (Longitude,Latitude) grid cell desired into the NetCDF file.
 % e.g. When only one file is specified, then the grid as only one point (1,1).
-STATIONS = {'polargmo';'enbj'};
-origen_str = '';
+STATIONS = {'polargmo';'enas';'enbj'};
+origin_str = '';
+[mxN_x, mxN_y] = size(STATIONS);
 
-% The Database is orginized following the WRF-grid as close as possible:
+%% The Database is orginized following the WRF-grid as close as possible:
 % * (x_n, y_n): are the coordinates of the specified stations, when only
 % one station is introduced then the dimension xn and yn is 1.
 % * time: is the time converted to year,month,day,hour and it is
 % sorted according to the readed from the directory there the files
 % are located: A = dir([fullfile(INPATH, num2str(years)), '*.mat'])
 
-[mxN_x, mxN_y] = size(STATIONS);
 years  = [2014,2015];
 N_year = length(unique(years));
 
@@ -178,9 +179,9 @@ for n_x = 1:mxN_x,    % number of stations
                     idxobs = idxobs + 1;
                     if QCflag(i) ~= 15,  % 15 corresponds to all Quality test passed
                                          %continue;
-                        QC(n_x,n_y,idxobs) = 0;
+                        QC(n_x,n_y,idxobs) = QCflag(i);
                     else
-                        QC(n_x,n_y,idxobs) = 1;
+                        QC(n_x,n_y,idxobs) = QCflag(i);
                     end
 
                     % Extracting the date for the specific Observation:
@@ -239,6 +240,7 @@ for n_x = 1:mxN_x,    % number of stations
                         %fprintf(fp,'%10.3f',transpose(k(i,:))),layers_var);
                     end
                     
+                    % --
                     % end over i: number of observations per File 
                 end
                 
@@ -290,7 +292,8 @@ for n_x = 1:mxN_x,    % number of stations
                 end
                 ncwrite(ncfile,'QIDX',shiftdim(QCflag,-2),[n_x, n_y, 1+Last_obs]);
                 ncwriteatt(ncfile,'QIDX','long_name','Profile Quality index');
-                                
+                ncwriteatt(ncfile,'QIDX','note:','15=good quality');
+                
                 % Writting 2-D variables in NetCDF file:
                 for j=1:length(wrf_locname),
                     if n_x==1 & n_y==1 & i_year==1,
@@ -313,22 +316,30 @@ for n_x = 1:mxN_x,    % number of stations
                 end
             
                 Last_obs = Last_obs + idxobs;
-            
+                clear ALLVARS SURFVars ndate;
+                
+                %--
                 % end over number of files (index f)
             end
+            
+            % --
             % end over years (index i_year)
         end 
             
         % Writting global variables:
-        origen_str = [origen_str, sprintf('(%03d,%03d)->%s;',n_x,n_y,STATIONS{n_x,n_y})];
+        origin_str = [origin_str, sprintf('(%03d,%03d)->%s;',n_x,n_y,STATIONS{n_x,n_y})];
         ncwriteatt(ncfile,'/','grid_x',NaN);
         ncwriteatt(ncfile,'/','grid_y',NaN);
-        ncwriteatt(ncfile,'/','origin',origen_str);
+        ncwriteatt(ncfile,'/','origin',origin_str);
         ncwriteatt(ncfile,'/','Creation',datestr(today));
         ncwriteatt(ncfile,'/','Contact','Pablo.Saavedra@uib.no');
-
+        ncwriteatt(ncfile,'/','Institution',['Geophysical Institute, ' ...
+                            'Uni-Bergen']);
+        % --
         % end over y station (index n_y)
     end 
+    
+    % --
     % end over x station (index n_x)
 end 
 return;
