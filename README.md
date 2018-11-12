@@ -22,7 +22,7 @@ The Function can be used by calling one or any combinations of the following set
 >> [data, metvar, {metadata}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour,'matfile',true);
 ```
 where,
-INPUT VARIABLES
+#### INPUT VARIABLES:
 ```
 % station-> (string) Code for the station to download;
 % year  --> (numeric) Range for Year of the date we want to download, e.g. [2015:2018];
@@ -46,17 +46,23 @@ Default options:
 % 'csvfile'->false,
 % 'netcdf'->false.
 ```
-OUTPUT VARIABLES:
+#### OUTPUT VARIABLES:
 ```
 % data --> MATLAB Structure variable containing the Radiosonde data and related information. 
 % metvar --> MATLAB Structure variable with Sounding Station Parameters and Indices for every profile.
 ```
 In case of unsuccessful downloading (e.g. hour 10 doesn't exist) it returns an empty variable or skip that hour.
 
-OPTIONAL OUTPUT:
+#### OPTIONAL OUTPUT:
 ```    
 % metadata --> structure with two fields containing the METADATA describing every profile and Indice variable (for a extended description of indices, see HTML http://weather.uwyo.edu/upperair/indices.html)
 ``` 
+```
+station_name --> variable containing a string with the Name of the Station, e.g. 'ENBJ' for the Bjornoya station with code 01028.
+```
+
+#### DATA STORAGE:
+
 Downloaded data can be archived in one or any combination of following file formats -> CSV, NetCDF or MATLAB binary format. Depending on the input values a data archive will have a generic name like
 ```
 RS_Y[year1]-[year2]_M[month1]-[month2]_D[day1]-[day2]_H[hour1]-[hour2].nc
