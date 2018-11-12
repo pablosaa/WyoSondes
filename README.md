@@ -115,7 +115,7 @@ A detailed description of the variables in the profile is provided by the Wyomin
 http://weather.uwyo.edu/upperair/columns.html
 
 ### Description of the Sounding indices
-Similrly a detailed description of the Radiosonde indices is provided by the Wyoming University web site:
+Similarly a detailed description of the Radiosonde indices is provided by the Wyoming University web site:
 http://weather.uwyo.edu/upperair/indices.html
 
 ## USAGE EXAMPLE
