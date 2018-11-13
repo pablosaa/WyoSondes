@@ -16,34 +16,35 @@ clear all;
 close all;
 
 % boolean parameters
-TXTF = false;
+TXTF = false;    % set TRUE if a ASCII file as output is wanted
+                 % (old version)
 
-% Parameter definitions:
-topH = 10100;   % max height to consider [m]
-MinLev = 40;   % minimum number of continues layers the RS must have
+
+%% Parameter definitions:
+topH = 10100;   % top profile height to consider [m]
+MinLev = 40;   % minimum number of continues layers the RadioSonde must have
 
 % Default layer altitudes (if not specified as input)
 H0 = [[10:20:1500],...
       [1550:50:3000],...
       [3200:200:topH]];    % layer to homoginize [m]
 
+          
+%% Definition of Pressure layers where to homogenize RS profiles
 
-P0 = 1013; % Reference Pressure [hPa]
-           % old version Pa = [[P0:-1.1:850],[845:-5:760],[740:-20:600],[550:-50:350]];
-Pa = [[P0:-1.6:710],[680:-30:560],[510:-50:300]];
+P0 = 1013; % Surface Reference Pressure [hPa]
 M = 28.8; % Molar mass [gr/mol]
 g = 9.807; % gravity acceleration [m/s^2]
 R = 8.31446; % Molar gas constant [J/mol/K]
 T0 = 290;   % Initial Ambient Temperature  [K]
 % Lr = 6.5;   % Temperature lapse-rate [K/km]
+Pa = [[P0:-1.6:710],[680:-30:560],[510:-50:300]];
 %
-% H0 = R*T0/M/g*log(P0./Pa)./(1+R*Lr/M/g*log(P0./P));
-
 H0 = 1e3*R*T0/M/g*log(P0./Pa);  % standard Atmosphere altitude [m]
 
-nlay = length(H0); % Number of layers for the homoginized grid
+nlay = length(H0); % Number of layers for the homogenized layers
 
-% Definition of Variable names and attributes for NetCDF file:
+%% Definition of Variable names and attributes for NetCDF file:
 % Variables needs to be included in the ASCII file
 surface_names = {'PRES','TEMP','RELH'};
 layers_var = {'HGHT','PRES','TEMP','RELH','CLOUD','RAIN'};
@@ -71,8 +72,9 @@ nc_metadata = {
     'SNOW', 'Snow Content','g/m^3';
     'GRAUPEL','Graupel Content','g/m^3'
 };
-QC = [];   % quality factor to storage in mat-file
 
+
+QC = [];   % quality factor to storage in mat-file
 
 % Indexing for NetCDF files:
 n_x = 0; % this is index for different stations
@@ -80,17 +82,20 @@ n_y = 0; % this index is for different years
 
 y = 0;
 
+%************************************************************
 % Setting up the files to run:
-%% INPATH = '~/GFI/data/RASOBS/norderney/2015/';
+% INPATH = '~/GFI/data/RASOBS/norderney/2015/';
 OUTPATH = '/home/pga082/GFI/data/RT/';
 
 
 %% The cell string 'STATIONS' must be organized according to
 % the (Longitude,Latitude) grid cell desired into the NetCDF file.
 % e.g. When only one file is specified, then the grid as only one point (1,1).
-STATIONS = {'polargmo';'enas';'enbj'};
-origin_str = '';
+STATIONS = {'enan'}; %{'polargmo';'enas';'enbj'};
 [mxN_x, mxN_y] = size(STATIONS);
+
+origin_str = '';   % string containing information about the origin RS
+
 
 %% The Database is orginized following the WRF-grid as close as possible:
 % * (x_n, y_n): are the coordinates of the specified stations, when only
@@ -99,7 +104,7 @@ origin_str = '';
 % sorted according to the readed from the directory there the files
 % are located: A = dir([fullfile(INPATH, num2str(years)), '*.mat'])
 
-years  = [2014,2015];
+years  = [2015:2018];
 N_year = length(unique(years));
 
 % Defining NetCDF and ASCII output file:
@@ -123,8 +128,16 @@ for n_x = 1:mxN_x,    % number of stations
 
                 % loading the data:
                 disp(['Loading... ' filen]);
+                clear data station stationname;
                 load(filen);
-                % names = regexprep(fieldnames(data),'HGHT','CLOUD');
+                % checking if variables 'station' and 'stationname' are
+                % present to create 'origin_str' for NetCDF output file 
+                if ~exist('station','var'),
+                    station = '???';
+                end
+                if ~exist('stationname','var'),
+                    stationname = STATIONS{n_x,n_y};
+                end
                 nobs  = length(data);
                 
                 QCflag = int8(zeros(nobs,1));   % Quality Control flag 8 bits:
@@ -199,17 +212,29 @@ for n_x = 1:mxN_x,    % number of stations
                     for k=1:length(surface_names),
                         eval(['tmp = find(Zunq<=topH & ~isnan(data(i).'...
                               surface_names{k} '(Iunq)));']);
-                        eval(['SURFVars(idxobs,k) = interp1(Zunq(tmp),data(i).'...
-                              surface_names{k} '(Iunq(tmp)),0,''linear'',''extrap'');']);
+                        
+                        % In case no profile is available in the
+                        % lower Atmospheric layers:
+                        if isempty(tmp),
+                            SURFVars(idxobs,k) = NaN;
+                            continue;
+                        end
+                        eval(['SURFVars(idxobs,k) = interp1(Zunq(tmp),data(i).' surface_names{k} '(Iunq(tmp)),0,''linear'',''extrap'');']);
+                        
                     end
 
                     % Interpolating the profile variables to fixed layers below topH:
                     tmp = Iunq(find(Zunq <= topH)); %find(data(i).HGHT<=topH);
-                    TEMPVars = structfun(@(x) (interp1(data(i).HGHT(tmp(~isnan(x(tmp)))),...
-                                                       x(tmp(~isnan(x(tmp)))),H0,...
-                                                       'linear','extrap')),...
-                                         data(i), 'UniformOutput',false);
-
+                                                    
+                    if isempty(tmp),
+                        TEMPVars = structfun(@(x) (NaN*H0),data(i),...
+                        'UniformOutput',false);
+                    else
+                        TEMPVars = structfun(@(x) (interp1(data(i).HGHT(tmp(~isnan(x(tmp)))),...
+                        x(tmp(~isnan(x(tmp)))),H0,...
+                        'linear','extrap')),...
+                        data(i), 'UniformOutput',false);
+                    end
                     % Converting the Height units from m to km and from
                     % station level to a.s.l.:
                     TEMPVars.HGHT = (TEMPVars.HGHT)/1e3;  %+metvar.SELV(i)
@@ -327,7 +352,7 @@ for n_x = 1:mxN_x,    % number of stations
         end 
             
         % Writting global variables:
-        origin_str = [origin_str, sprintf('(%03d,%03d)->%s;',n_x,n_y,STATIONS{n_x,n_y})];
+        origin_str = [origin_str, sprintf('[%03d,%03d]->%s(%s);',n_x,n_y,stationname,station)];
         ncwriteatt(ncfile,'/','grid_x',NaN);
         ncwriteatt(ncfile,'/','grid_y',NaN);
         ncwriteatt(ncfile,'/','origin',origin_str);

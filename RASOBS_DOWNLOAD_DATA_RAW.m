@@ -51,7 +51,7 @@ matflag = false;
 PATH_DAT = [];
 TAKE_A_BREAK = 4;  % default waiting between downloads 4 secs.
 
-if nargout>3,
+if nargout>4,
     error('Maximum three Output variables are needed. See help!');
 end
 
@@ -128,10 +128,11 @@ for YEAR=year;
                     warning(['Data from ' timestamp ' does not exist!']);
                     continue;
                 end
-                tmp = textscan(html(tit(1)+4:tit(2)-1),'%s%s%[^\n]',...
+                tmp = textscan(html(tit(1)+4:tit(2)-1),'%s%s%s%[^\n]',...
                                'CollectOutput',true);
-                stationname = tmp{1}{2};
-                headerline = tmp{1}{3};
+                stationname = tmp{1}{2};   % e.g. 'ENBJ'
+                locationname = tmp{1}{3};  % e.g. 'Bjornoya'
+                headerline = tmp{1}{4};    % e.g. 'Observations at ...'
                 pos  = regexpi(html,'<PRE>');
                 if isempty(pos),
                     warning(['Data from ' timestamp ' does not exist!']);
@@ -310,7 +311,7 @@ end;   % end over years
 
             
         end
-        ncwriteatt(ncfile,'/','Observatory Name',stationname);
+        ncwriteatt(ncfile,'/','Observatory Name',[stationname '_' locationname]);
         ncwriteatt(ncfile,'/','Station Code Number',station);
         ncwriteatt(ncfile,'/','Observatory Latitude [deg]',metvar.SLAT(1));
         ncwriteatt(ncfile,'/','Observatory Longitude [deg]',metvar.SLON(1));
