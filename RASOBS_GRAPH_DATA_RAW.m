@@ -14,7 +14,7 @@ function [varargout] = RASOBS_GRAPH_DATA_RAW(varargin)
 % ---------------------------------------------------------------    
 if nargin==0,
     % open file browser to load .mat file
-    [data, metvar, metadata] = update_matfile();
+    [data0, metvar, metadata] = update_matfile();
 elseif nargin==2,
     data = varargin{1};
     metvar = varargin{2};
@@ -29,7 +29,7 @@ end
 
 % ----------------------------------------------
 % Variables default Initialization
-nsonde = length(data);
+nsonde = length(data0);  % PSG
 isonde = min(5,nsonde);  % initial radiosonde to display
 span = 2;  % +/- two time steps, it can be increased
 rspan = min(nsonde,max(1,[isonde-span:isonde+span]));
@@ -49,8 +49,11 @@ end
 i = min(find(rspan==isonde));
 colorlin(i,:) = [0 0 0];
 
+%% Including the Profile derivatives for T, Theta, Theta_v
+data = Calculate_Derivatives(data0);  % PSG
+
 maxz = 0;
-xvar = 'TEMP';
+xvar = 'D1TH'; %'TEMP';
 yvar = 'HGHT';
 names = fieldnames(data);
 nvar = length(names);
@@ -62,6 +65,7 @@ idxvar = find(arrayfun(@(x) ~isempty(tmp{x}),...
 Nobs = length(metvar.OBST);
 tmp = cell2mat(textscan(sprintf('20%8.2f',metvar.OBST),...
                         '%4f%2f%5f',Nobs,'CollectOutput',1));
+
 
 %% Convert the series of profiles into a homogeneus matrix:
 [PROFILER, TimePROF, Tnumobs] = InitializeProfiler(data,metvar.OBST,12000);
@@ -80,7 +84,7 @@ clf;
 %% Sub-plot 1 for the individual profiles
 ha.ax(1) = subplot(6,1,1:3);
 hold on;
-ha.hh = arrayfun(@(i){plot(data(i).TEMP,1e-3*data(i).HGHT,...
+ha.hh = arrayfun(@(i){plot(data(i).D1TH,1e-3*data(i).HGHT,...
                               'DisplayName',sprintf('T0 %+2d',i-isonde),...
                               'LineWidth',2,'Tag','TEMP',...
                               'Color',colorlin(i-rspan(1)+1,:));...
@@ -342,8 +346,11 @@ function []=pick_time0(h,eventdata,ha,Tnum,data)
     return;
 end
 
+
+%% HERE STARTS AUXILIARY FUNCTIONS 
+
 % ---------------------------------------------------------------
-% Sub-function to INITIALIZE the time-series Profiler:
+% Function to INITIALIZE the time-series Profiler:
 function [PROFILER, TimePROF, Tnumobs] = InitializeProfiler(data,OBST,H_top);
 
 names = fieldnames(data);
@@ -367,4 +374,36 @@ end
 TimePROF = repmat(Tnumobs,1,max(hmax));
 
 return;
+end
+
+
+% --------------------------------------------------------------
+% Function to make the profiles derivatives respecto to Z
+function data = Calculate_Derivatives(data0)
+    
+% new fields to include:
+    d1dz_names = {'D1TE','D1TH','D1TV'};
+    d2dz_names = {'D2TE','D2TH','D2TV'};
+    in_names = {'TEMP','THTA','THTV'};
+    
+    Nobs = length(data0);
+    
+    tmp1 = arrayfun(@(i) cellfun(@(x) diff(getfield(data0(i),x))./diff(data0(i).HGHT),...
+                                 in_names,'UniformOutput',false),...
+                    [1:Nobs],'UniformOutput',false);
+    
+    tmp2 = arrayfun(@(i) cellfun(@(x) diff(getfield(data0(i),x),2)./diff(data0(i).HGHT,2),...
+                                 in_names,'UniformOutput',false),...
+                    [1:Nobs],'UniformOutput',false);
+
+
+    %%qq=cell2struct(tmp1{1},d1dz_names,2);
+    
+    for i=1:Nobs,
+        for j=1:3,
+            data0(i).(d1dz_names{j}) = [tmp1{i}{j}; NaN];
+        end
+    end
+    data = data0;
+    return;
 end
