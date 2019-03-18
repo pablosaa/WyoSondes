@@ -29,7 +29,12 @@ H0 = [[10:20:1500],...
       [1550:50:3000],...
       [3200:200:topH]];    % layer to homoginize [m]
 
-          
+
+NH = 145;
+H0 = 10*unique(floor(logspace(1,4,NH)/10));
+tmp = smooth(diff(H0));
+H0 = cumsum(tmp);   % standard Atmosphere altitude [m]
+
 %% Definition of Pressure layers where to homogenize RS profiles
 
 P0 = 1013; % Surface Reference Pressure [hPa]
@@ -38,9 +43,10 @@ g = 9.807; % gravity acceleration [m/s^2]
 R = 8.31446; % Molar gas constant [J/mol/K]
 T0 = 290;   % Initial Ambient Temperature  [K]
 % Lr = 6.5;   % Temperature lapse-rate [K/km]
-Pa = [[P0:-1.6:710],[680:-30:560],[510:-50:300]];
+%Pa = [[P0:-1.6:710],[680:-30:560],[510:-50:300]];
+Pa = P0*exp(-M*g/R/T0*H0*1e-3);
 %
-H0 = 1e3*R*T0/M/g*log(P0./Pa);  % standard Atmosphere altitude [m]
+%H0 = 1e3*R*T0/M/g*log(P0./Pa);  
 
 nlay = length(H0); % Number of layers for the homogenized layers
 
@@ -91,7 +97,7 @@ OUTPATH = '/home/pga082/GFI/data/RT/';
 %% The cell string 'STATIONS' must be organized according to
 % the (Longitude,Latitude) grid cell desired into the NetCDF file.
 % e.g. When only one file is specified, then the grid as only one point (1,1).
-STATIONS = {'enan'}; %{'polargmo';'enas';'enbj'};
+STATIONS = {'enzv'}; %{'polargmo';'enas';'enbj'};
 [mxN_x, mxN_y] = size(STATIONS);
 
 origin_str = '';   % string containing information about the origin RS
@@ -104,7 +110,7 @@ origin_str = '';   % string containing information about the origin RS
 % sorted according to the readed from the directory there the files
 % are located: A = dir([fullfile(INPATH, num2str(years)), '*.mat'])
 
-years  = [2015:2018];
+years  = [2019:2019];
 N_year = length(unique(years));
 
 % Defining NetCDF and ASCII output file:
@@ -334,10 +340,11 @@ for n_x = 1:mxN_x,    % number of stations
                 % Writting 1-D variables in NetCDF file:
                 for j=1:4,
                     if n_x==1 & n_y==1 & i_year==1,
-                        nccreate(ncfile,date_name{j},'Datatype','single', ...
-                                 'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf});
+                        nccreate(ncfile,date_name{j},'Datatype','single',...                        
+                        'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf});
                     end
-                    ncwrite(ncfile,date_name{j},shiftdim(ndate(:,j),-2),[n_x, n_y, 1+Last_obs]);
+                    ncwrite(ncfile,date_name{j},shiftdim(ndate(:,j),-2),...
+                    [n_x, n_y, 1+Last_obs]);
                 end
             
                 Last_obs = Last_obs + idxobs;

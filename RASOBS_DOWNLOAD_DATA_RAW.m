@@ -84,15 +84,6 @@ else
     error('Number of input arguments wrong! See help.');
 end
 
-%% IF THE CAMPAIGN IAOB_DOWNLOAD_DATA_MATLAB_pablo.m
-if strcmpi(stationname,'jokioinen')==1;
-    station = '02963';
-end;
-
-%% IF THE CAMPAIGN IS TALLINN
-if strcmpi(stationname,'Tallinn')==1;
-    station = '26038';
-end;
 
 %% Defining variable names:
 metadata = WyoRS_metadata();
@@ -198,18 +189,26 @@ for YEAR=year;
                 description = globaltmp{1};  %globalinfo{idx_hr}.description
                 glovalues = globaltmp{2};
 		
-              % Changing Date format from "YYMMDD/hhmm"->"YYMMDD.hhmm"
+                % Changing Date format from "YYMMDD/hhmm"->"YYMMDD.hhmm"
 		idxtmp = find(strcmp(description,'Observation time'));
                 tmp = sscanf(strrep(glovalues{idxtmp},'/','.'),'%06d.%02d%02d');
                 tmp = tmp(1)+[1/24 1/3600]*tmp(2:3);
+
                 % Finding which parameters are present:
                 [tt,ii] = ismember(description,DescriptionIndices);
+
                 % Filling values for parameter indices:
                 INDIPAR(:,idx_hr) = NaN;
                 INDIPAR(ii(tt),idx_hr)=cellfun(@str2num,glovalues(tt));
                 INDIPAR(ii(idxtmp),idx_hr) = tmp;   % insert the 'Observation time'
+                % Converting INDICES matrix into struct for output variable:
+                qq=arrayfun(@(i) sprintf('metvar.%s=INDIPAR(%d,:);',...
+                                         NameIndices{i},i),...
+                            [1:length(NameIndices)],'UniformOutput',false);                      
+                cellfun(@eval, qq);
+
                 if isempty(PATH_DAT),
-                    PATH_DAT = ['../data/RASOBS/'...
+                    PATH_DAT = ['../../data/RASOBS/'...
                                 lower(stationname) '/' ...
                                 yyyy '/'];
                 end
@@ -221,6 +220,16 @@ for YEAR=year;
                              sprintf('Y%04d-%04d_M%02d-%02d_D%02d-%02d_H%02d-%02d',...
                                      year([1,end]),month([1,end]),...
                                      day([1,end]),hour([1,end]))];
+
+                %% SAVE DATA as MAT-file
+                if matflag && ~exist([file_name '.mat'],'file'),
+                    save([file_name '.mat'],'-v7','data','metvar','metadata',...
+                         'stationname','locationname','station');
+                end
+                if matflag && exist([file_name '.mat'],'file'),
+                    save([file_name '.mat'],'-append','data','metvar');
+                end
+                
                 %% SAVE DATA as CSV?
                 if csvflag,
                     disp('Storing CSV file...');
@@ -247,14 +256,8 @@ end;   % end over years
         end
         return;
     end
-    
-    %% Creating output variables:
-    qq=arrayfun(@(i) sprintf('metvar.%s=INDIPAR(%d,:);',...
-                             NameIndices{i},i),...
-                [1:length(NameIndices)],'UniformOutput',false);                      
-    cellfun(@eval, qq);
-     
-    % passing output variables to workspace:
+         
+    %% passing output variables to workspace:
     for i=1:nargout,
         outputvar = {'data','metvar','metadata','stationname'};
         if i>3,
@@ -264,63 +267,12 @@ end;   % end over years
         eval(['varargout{i} = ' outputvar{i} ';']);
     end
 
-    %% SAVE DATA as NetCDF or MAT?
-    if matflag,
-        disp('Storing MAT file...');
-        save([file_name '.mat'],'-v7','data','metvar','metadata','stationname','station');
-    end
+    %% SAVE DATA as NetCDF
+
     if ncdfflag,
-        if exist('OCTAVE_VERSION','builtin'),
-            pkg load netcdf;
-            disp('NETCDF package loaded... ');
-        end
-        nsonde = length(data);
-        ncfile = [file_name '.nc'];
-        for i=1:length(names{1}),
-            nccreate(ncfile,names{1}{i},...
-                     'Dimensions',{'nsonde',nsonde,'levels',Inf},...
-                     'FillValue',NaN,'Format','netcdf4');
-            tmp = strfind(ProfileMeta,names{1}{i});  %strfind(names{1}{i},ProfileMeta);
-            idxtmp = find(arrayfun(@(k) ~isempty(tmp{k,1}),...
-                                   [1:length(ProfileMeta)]));
-            for j=1:nsonde,
-                eval(['ncwrite(ncfile,names{1}{i},transpose(data(j).'...
-                      names{1}{i} '),[j,1]);']);
-            end
-            ncwriteatt(ncfile,names{1}{i},'ShortName', ProfileMeta{idxtmp,1});
-            ncwriteatt(ncfile,names{1}{i},'LongName', ProfileMeta{idxtmp,2});
-            ncwriteatt(ncfile,names{1}{i},'units', ProfileMeta{idxtmp,3});
-                %units{1}{i});
-
-        end  % end over variable names
-        for i=1:length(NameIndices),
-            if any([strcmp(NameIndices{i},'SLAT'),...
-                    strcmp(NameIndices{i},'SLON'),...
-                    strcmp(NameIndices{i},'SELV')])
-                continue;
-            end
-            nccreate(ncfile,NameIndices{i},...
-                    'Dimensions',{'nsonde',nsonde},...
-                    'FillValue',NaN,'Format','netcdf4');
-            eval(['ncwrite(ncfile,NameIndices{i},'...
-                    'transpose(metvar.' NameIndices{i} '));']);
-            ncwriteatt(ncfile,NameIndices{i},'units',...
-                       UnitsIndices{i});
-            ncwriteatt(ncfile,NameIndices{i},'LongName',...
-                       DescriptionIndices{i});
-
-            
-        end
-        ncwriteatt(ncfile,'/','Observatory Name',[stationname '_' locationname]);
-        ncwriteatt(ncfile,'/','Station Code Number',station);
-        ncwriteatt(ncfile,'/','Observatory Latitude [deg]',metvar.SLAT(1));
-        ncwriteatt(ncfile,'/','Observatory Longitude [deg]',metvar.SLON(1));
-        ncwriteatt(ncfile,'/','Observatory Altitude [m]',metvar.SELV(1));
-        ncwriteatt(ncfile,'/','Source','http://weather.uwyo.edu/cgi-bin/sounding');
-        ncwriteatt(ncfile,'/','Indices Description',...
-                   'http://weather.uwyo.edu/upperair/indices.html');
-        ncwriteatt(ncfile,'/','Contact','Pablo.Saavedra@uib.no');
-        ncwriteatt(ncfile,'/','Institution','Geophysical Institute, Uni-Bergen');
+        WyoRS_mat2netcdf('data',data,'metvar',metvar,...
+                         'stationname',stationname,'station',station,...
+                         'ncdffile',[file_name '.nc']);
     end   % end if NetCDF
     
     return;
@@ -328,29 +280,55 @@ end;   % end over years
 % end of function
 
 %
-% from old version:
-% $$$  if exist('OCTAVE_VERSION','builtin'),
-% $$$                     url = javaObject('java.net.URL',url);
-% $$$                     is = javaMethod('openStream',url);
-% $$$                     isr = javaObject('java.io.InputStreamReader',is);
-% $$$                     br  = javaObject('java.io.BufferedReader',isr);
-% $$$ 		else
-% $$$                     % for MATLAB case:
-% $$$                     url = java.net.URL(url);                
-% $$$                     is = openStream(url);
-% $$$                     isr = java.io.InputStreamReader(is);
-% $$$                     br = java.io.BufferedReader(isr);
-% $$$                 end
-% $$$ 
-% $$$                 fp = fopen([PATH_DAT file_name],'w');
-% $$$                 for k = 1:200;             % Read the first 4 lines of text
-% $$$                     if exist('OCTAVE_VERSION','builtin'),
-% $$$                         s = javaMethod('readLine',br);
-% $$$                     else
-% $$$                         s = readLine(br);
-% $$$                     end
-% $$$                     p = char(s);
-% $$$                     fprintf(fp,'%s\n',p);
-% $$$                 end;
-% $$$                 fclose(fp);
 
+% $$$         if exist('OCTAVE_VERSION','builtin'),
+% $$$             pkg load netcdf;
+% $$$             disp('NETCDF package loaded... ');
+% $$$         end
+% $$$         nsonde = length(data);
+% $$$         ncfile = [file_name '.nc'];
+% $$$         for i=1:length(names{1}),
+% $$$             nccreate(ncfile,names{1}{i},...
+% $$$                      'Dimensions',{'nsonde',nsonde,'levels',Inf},...
+% $$$                      'FillValue',NaN,'Format','netcdf4');
+% $$$             tmp = strfind(ProfileMeta,names{1}{i});  %strfind(names{1}{i},ProfileMeta);
+% $$$             idxtmp = find(arrayfun(@(k) ~isempty(tmp{k,1}),...
+% $$$                                    [1:length(ProfileMeta)]));
+% $$$             for j=1:nsonde,
+% $$$                 eval(['ncwrite(ncfile,names{1}{i},transpose(data(j).'...
+% $$$                       names{1}{i} '),[j,1]);']);
+% $$$             end
+% $$$             ncwriteatt(ncfile,names{1}{i},'ShortName', ProfileMeta{idxtmp,1});
+% $$$             ncwriteatt(ncfile,names{1}{i},'LongName', ProfileMeta{idxtmp,2});
+% $$$             ncwriteatt(ncfile,names{1}{i},'units', ProfileMeta{idxtmp,3});
+% $$$                 %units{1}{i});
+% $$$ 
+% $$$         end  % end over variable names
+% $$$         for i=1:length(NameIndices),
+% $$$             if any([strcmp(NameIndices{i},'SLAT'),...
+% $$$                     strcmp(NameIndices{i},'SLON'),...
+% $$$                     strcmp(NameIndices{i},'SELV')])
+% $$$                 continue;
+% $$$             end
+% $$$             nccreate(ncfile,NameIndices{i},...
+% $$$                     'Dimensions',{'nsonde',nsonde},...
+% $$$                     'FillValue',NaN,'Format','netcdf4');
+% $$$             eval(['ncwrite(ncfile,NameIndices{i},'...
+% $$$                     'transpose(metvar.' NameIndices{i} '));']);
+% $$$             ncwriteatt(ncfile,NameIndices{i},'units',...
+% $$$                        UnitsIndices{i});
+% $$$             ncwriteatt(ncfile,NameIndices{i},'LongName',...
+% $$$                        DescriptionIndices{i});
+% $$$ 
+% $$$             
+% $$$         end
+% $$$         ncwriteatt(ncfile,'/','Observatory Name',[stationname '_' locationname]);
+% $$$         ncwriteatt(ncfile,'/','Station Code Number',station);
+% $$$         ncwriteatt(ncfile,'/','Observatory Latitude [deg]',metvar.SLAT(1));
+% $$$         ncwriteatt(ncfile,'/','Observatory Longitude [deg]',metvar.SLON(1));
+% $$$         ncwriteatt(ncfile,'/','Observatory Altitude [m]',metvar.SELV(1));
+% $$$         ncwriteatt(ncfile,'/','Source','http://weather.uwyo.edu/cgi-bin/sounding');
+% $$$         ncwriteatt(ncfile,'/','Indices Description',...
+% $$$                    'http://weather.uwyo.edu/upperair/indices.html');
+% $$$         ncwriteatt(ncfile,'/','Contact','Pablo.Saavedra@uib.no');
+% $$$         ncwriteatt(ncfile,'/','Institution','Geophysical Institute, Uni-Bergen');

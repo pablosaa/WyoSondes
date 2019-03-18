@@ -53,7 +53,7 @@ colorlin(i,:) = [0 0 0];
 data = Calculate_Derivatives(data0);  % PSG
 
 maxz = 0;
-xvar = 'D1TH'; %'TEMP';
+xvar = 'TEMP';
 yvar = 'HGHT';
 names = fieldnames(data);
 nvar = length(names);
@@ -84,7 +84,7 @@ clf;
 %% Sub-plot 1 for the individual profiles
 ha.ax(1) = subplot(6,1,1:3);
 hold on;
-ha.hh = arrayfun(@(i){plot(data(i).D1TH,1e-3*data(i).HGHT,...
+ha.hh = arrayfun(@(i){plot(data(i).TEMP,1e-3*data(i).HGHT,...
                               'DisplayName',sprintf('T0 %+2d',i-isonde),...
                               'LineWidth',2,'Tag','TEMP',...
                               'Color',colorlin(i-rspan(1)+1,:));...
@@ -392,7 +392,7 @@ function data = Calculate_Derivatives(data0)
                                  in_names,'UniformOutput',false),...
                     [1:Nobs],'UniformOutput',false);
     
-    tmp2 = arrayfun(@(i) cellfun(@(x) diff(getfield(data0(i),x),2)./diff(data0(i).HGHT,2),...
+    tmp2 = arrayfun(@(i) cellfun(@(x) diff(getfield(data0(i),x),2)./diff(data0(i).HGHT(1:end-1)),...
                                  in_names,'UniformOutput',false),...
                     [1:Nobs],'UniformOutput',false);
 
@@ -402,6 +402,7 @@ function data = Calculate_Derivatives(data0)
     for i=1:Nobs,
         for j=1:3,
             data0(i).(d1dz_names{j}) = [tmp1{i}{j}; NaN];
+            data0(i).(d2dz_names{j}) = [tmp2{i}{j}; NaN; NaN];
         end
     end
     data = data0;
