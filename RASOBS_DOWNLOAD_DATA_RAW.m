@@ -102,17 +102,31 @@ for YEAR=year;
 
     yyyy = sprintf('%4d',year);
     
-    for MONTH = month;
-        for DAY = day;
-            for HOUR = hour;
+    for MONTH = month,
+        for DAY = day,
+            % Checking if DATE exist in calendar
+            % e.g. YEAR.02.31 doesn't exist->skip it.
+            if ~all(datevec(datenum(YEAR,MONTH,DAY)) == [YEAR MONTH DAY 0 0 0]),
+                continue;
+            end
+            
+            for HOUR = hour,
                 mm = sprintf('%02d',MONTH);
                 dd = sprintf('%02d',DAY);
                 hh = sprintf('%02d',HOUR);
+                                
                 timestamp = sprintf('%s.%s.%s_%sUTC',dd,mm,yyyy,hh);
                 url = ['http://weather.uwyo.edu/cgi-bin/sounding?region=europe&TYPE=TEXT%3ALIST&YEAR='...
                     yyyy '&MONTH=' mm '&FROM=' dd hh '&TO=' dd hh '&STNM=' station];
-                html = urlread(url);
+                [html, status] = urlread(url);
+                if ~status,
+                    disp(['downloading not possible for: ' url]);
+                    continue;
+                end
+                % make a pause to let the file be downloaded before
+                % continue with the script:
                 pause(TAKE_A_BREAK);
+                
                 % Finding Title of HTML database
                 tit  = cell2mat(regexpi(html,{'<H2>','</H2>'}));
                 if isempty(tit),

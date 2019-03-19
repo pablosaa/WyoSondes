@@ -16,11 +16,11 @@ if nargin==0,
     % open file browser to load .mat file
     [data0, metvar, metadata] = update_matfile();
 elseif nargin==2,
-    data = varargin{1};
+    data0 = varargin{1};
     metvar = varargin{2};
     metadata = WyoRS_metadata();    
 elseif nargin==3,
-    data = varargin{1};
+    data0 = varargin{1};
     metvar = varargin{2};
     metadata = varargin{3};
 else
@@ -100,6 +100,7 @@ tmp = get(ha.ax(1),'Position').*[1 1 0.75 1];
 i = [nspan:-1:1];  % to get the middle line to the top
 i(span+1) = '';
 i = [span+1, i];   % putting the middle line to the top
+
 if exist('OCTAVE_VERSION','builtin'),
   objarray = cell2mat(ha.hh(i));
 else
@@ -119,7 +120,11 @@ if Nobs==1,
     ha.p2d = pcolor([]);
 else
     ha.p2d = pcolor(TimePROF,1e-3*PROFILER(:,:,2),PROFILER(:,:,3));
+    %HH = 1e-3*PROFILER(:,:,2);
+    %CC = PROFILER(:,:,3);
+    %ha.p2d = scatter(TimePROF(:),HH(:),95,CC(:),'s','filled');
 end
+%axis xy; 
 shading flat;
 axis tight;
 tmp = get(ha.ax(2),'Position').*[1 0.9 1 1.04];
@@ -353,27 +358,30 @@ end
 % Function to INITIALIZE the time-series Profiler:
 function [PROFILER, TimePROF, Tnumobs] = InitializeProfiler(data,OBST,H_top);
 
-names = fieldnames(data);
-nvar = length(names);
-Nobs = length(OBST);
-% Converting the OBST variable to Matlab datenum format:
-tmp = cell2mat(textscan(sprintf('20%8.2f',OBST),...
-                        '%4f%2f%5f',Nobs,'CollectOutput',1));
+    names = fieldnames(data);
+    nvar = length(names);
+    Nobs = length(OBST);
+    % Converting the OBST variable to Matlab datenum format:
+    tmp = cell2mat(textscan(sprintf('20%8.2f',OBST),...
+                            '%4f%2f%5f',Nobs,'CollectOutput',1));
 
-Tnumobs = datenum(tmp);
-
-% index of the highest layer below 15km
-hmax = arrayfun(@(i) max(find(data(i).HGHT<H_top)),[1:Nobs]);
-PROFILER = zeros(Nobs,max(hmax),nvar)*NaN;
-for i=1:Nobs,
+    Tnumobs = datenum(tmp);
+    Tnumpro = [Tnumobs(1):median(diff(Tnumobs)):Tnumobs(end)]';
+    Npro = length(Tnumpro);
+    
+    % index of the highest layer below 15km:
+    hmax = arrayfun(@(i) max(find(data(i).HGHT<H_top)),[1:Nobs]);
+    PROFILER = zeros(Npro,max(hmax),nvar)*NaN;
+    for i=1:Nobs,
+        [tmp, idx] = min(abs(Tnumobs(i)-Tnumpro));
         for j=1:nvar,
-            eval(['PROFILER(i,1:hmax(i),j) = data(i).'...
+            eval(['PROFILER(idx,1:hmax(i),j) = data(i).'...
                   names{j} '(1:hmax(i));']);
         end
-end
-TimePROF = repmat(Tnumobs,1,max(hmax));
+    end
+    TimePROF = repmat(Tnumpro,1,max(hmax));
 
-return;
+    return;
 end
 
 
@@ -382,17 +390,17 @@ end
 function data = Calculate_Derivatives(data0)
     
 % new fields to include:
-    d1dz_names = {'D1TE','D1TH','D1TV'};
-    d2dz_names = {'D2TE','D2TH','D2TV'};
-    in_names = {'TEMP','THTA','THTV'};
-    
+    in_names = {'MIXR','THTA','THTV'};    % parameters to derive
+%d1dz_names = {'D1QV','D1TH','D1TV'};
+    d2dz_names = {'D2QV','D2TH','D2TV'};  % 2nd derivatives
+
     Nobs = length(data0);
     
-    tmp1 = arrayfun(@(i) cellfun(@(x) diff(getfield(data0(i),x))./diff(data0(i).HGHT),...
-                                 in_names,'UniformOutput',false),...
-                    [1:Nobs],'UniformOutput',false);
+    %tmp1 = arrayfun(@(i) cellfun(@(x) diff(getfield(data0(i),x))./diff(data0(i).HGHT),...
+    %                             in_names,'UniformOutput',false),...
+    %                [1:Nobs],'UniformOutput',false);
     
-    tmp2 = arrayfun(@(i) cellfun(@(x) diff(getfield(data0(i),x),2)./diff(data0(i).HGHT(1:end-1)),...
+    tmp2 = arrayfun(@(i) cellfun(@(x) diff(getfield(data0(i),x),2)./(diff(data0(i).HGHT(1:end-1))).^2,...
                                  in_names,'UniformOutput',false),...
                     [1:Nobs],'UniformOutput',false);
 
@@ -400,9 +408,9 @@ function data = Calculate_Derivatives(data0)
     %%qq=cell2struct(tmp1{1},d1dz_names,2);
     
     for i=1:Nobs,
-        for j=1:3,
-            data0(i).(d1dz_names{j}) = [tmp1{i}{j}; NaN];
-            data0(i).(d2dz_names{j}) = [tmp2{i}{j}; NaN; NaN];
+        for j=1:length(d2dz_names),
+            %data0(i).(d1dz_names{j}) = [tmp1{i}{j}; NaN];
+            data0(i).(d2dz_names{j}) = [NaN; tmp2{i}{j}; NaN];
         end
     end
     data = data0;
