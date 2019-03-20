@@ -97,12 +97,13 @@ OUTPATH = '/home/pga082/GFI/data/RT/';
 %% The cell string 'STATIONS' must be organized according to
 % the (Longitude,Latitude) grid cell desired into the NetCDF file.
 % e.g. When only one file is specified, then the grid as only one point (1,1).
-STATIONS = {'enzv'}; %{'polargmo';'enas';'enbj'};
+STATIONS = {'norderney'}; %{'polargmo';'enas';'enbj'};
 [mxN_x, mxN_y] = size(STATIONS);
 
 origin_str = '';   % string containing information about the origin RS
-
-
+                   
+SimTag = 'fino1';  % any simulation tag (short string max 8 char) 
+                   
 %% The Database is orginized following the WRF-grid as close as possible:
 % * (x_n, y_n): are the coordinates of the specified stations, when only
 % one station is introduced then the dimension xn and yn is 1.
@@ -110,11 +111,14 @@ origin_str = '';   % string containing information about the origin RS
 % sorted according to the readed from the directory there the files
 % are located: A = dir([fullfile(INPATH, num2str(years)), '*.mat'])
 
-years  = [2019:2019];
+years  = [2011:2018];
 N_year = length(unique(years));
 
 % Defining NetCDF and ASCII output file:
-outfilen = sprintf('RS_Y%04d-%04d_x%03dy%03d_RT',years(1),years(end),mxN_x,mxN_y);
+outfilen = sprintf('WyoRS_Y%04d-%04d_x%03dy%03dST%s.nc',...
+years(1),years(end),...
+mxN_x,mxN_y,SimTag(1:min(end,10)));
+
 if exist([OUTPATH outfilen '.nc']),
     disp('Deleting... NetCDF file');
     delete([OUTPATH outfilen '.nc']);
@@ -231,16 +235,42 @@ for n_x = 1:mxN_x,    % number of stations
 
                     % Interpolating the profile variables to fixed layers below topH:
                     tmp = Iunq(find(Zunq <= topH)); %find(data(i).HGHT<=topH);
-                                                    
-                    if isempty(tmp),
-                        TEMPVars = structfun(@(x) (NaN*H0),data(i),...
-                        'UniformOutput',false);
-                    else
-                        TEMPVars = structfun(@(x) (interp1(data(i).HGHT(tmp(~isnan(x(tmp)))),...
-                        x(tmp(~isnan(x(tmp)))),H0,...
-                        'linear','extrap')),...
-                        data(i), 'UniformOutput',false);
-                    end
+                    
+                    %try
+                        h_tmp = data(i).HGHT(tmp);
+                        Nh_tmp = length(h_tmp);
+                        hi = structfun(@(x) h_tmp(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
+                        vi = structfun(@(x) x(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
+                        tt = structfun(@(l) length(l), vi);
+                        names = fieldnames(vi);
+                        for k=1:length(names),
+                            Xin = getfield(hi,names{k});
+                            Yin = getfield(vi,names{k});
+                            if tt(k)>fix(Nh_tmp/2),
+                                Vinter = interp1(Xin,Yin,H0,'linear','extrap');
+                           else
+                                    Vinter = NaN*ones(nlay,1);
+                                    for badin=1:tt(k),
+                                        [dummy, Idxin] = min(abs(Xin(badin)-H0));
+                                        Vinter(Idxin) = Yin(badin);
+                                    end
+                           end
+                           eval(['TEMPVars.' names{k} '=Vinter;']);
+                           %if isempty(tmp) | length(tmp)<2,
+                           %if any(structfun(@(x) isempty(x(tmp(~isnan(x(tmp))))), data(i))),
+                           %TEMPVars = structfun(@(x) (NaN*H0),data(i),...
+                           %'UniformOutput',false);
+                        
+                           %else
+                           %TEMPVars = structfun(@(x) (interp1(x,vi,H0,'linear','extrap')), data(i), 'UniformOutput,1)
+                           %TEMPVars = structfun(@(x) (interp1(data(i).HGHT(tmp(~isnan(x(tmp)))),...
+                           %x(tmp(~isnan(x(tmp)))),H0,...
+                           %'linear','extrap')),...
+                           %data(i), 'UniformOutput',false);
+                       end
+                       %catch me
+                       % disp(i);
+                       %end
                     % Converting the Height units from m to km and from
                     % station level to a.s.l.:
                     TEMPVars.HGHT = (TEMPVars.HGHT)/1e3;  %+metvar.SELV(i)
