@@ -97,12 +97,12 @@ OUTPATH = '/home/pga082/GFI/data/RT/';
 %% The cell string 'STATIONS' must be organized according to
 % the (Longitude,Latitude) grid cell desired into the NetCDF file.
 % e.g. When only one file is specified, then the grid as only one point (1,1).
-STATIONS = {'norderney'}; %{'polargmo';'enas';'enbj'};
+STATIONS = {'polargmo';'enas';'enbj';'enan'}; %{'norderney'}; %;
 [mxN_x, mxN_y] = size(STATIONS);
 
 origin_str = '';   % string containing information about the origin RS
                    
-SimTag = 'fino1';  % any simulation tag (short string max 8 char) 
+SimTag = 'nansLegacy';  % any simulation tag (short string max 8 char) 'fino1';
                    
 %% The Database is orginized following the WRF-grid as close as possible:
 % * (x_n, y_n): are the coordinates of the specified stations, when only
@@ -111,7 +111,7 @@ SimTag = 'fino1';  % any simulation tag (short string max 8 char)
 % sorted according to the readed from the directory there the files
 % are located: A = dir([fullfile(INPATH, num2str(years)), '*.mat'])
 
-years  = [2011:2018];
+years  = [2008:2018];
 N_year = length(unique(years));
 
 % Defining NetCDF and ASCII output file:
@@ -119,9 +119,9 @@ outfilen = sprintf('WyoRS_Y%04d-%04d_x%03dy%03dST%s.nc',...
 years(1),years(end),...
 mxN_x,mxN_y,SimTag(1:min(end,10)));
 
-if exist([OUTPATH outfilen '.nc']),
-    disp('Deleting... NetCDF file');
-    delete([OUTPATH outfilen '.nc']);
+if exist(fullfile(OUTPATH, outfilen), 'file'),
+    disp(['Deleting... NetCDF file: ' OUTPATH outfilen]);
+    delete(fullfile(OUTPATH, outfilen) );
 end
 
 % Starting to read over number of Stations and years:
@@ -164,8 +164,11 @@ for n_x = 1:mxN_x,    % number of stations
                 tmp = arrayfun(@(i) ~any(diff(data(i).HGHT)<=0),[1:nobs]);
                 QCflag(tmp) = bitset(QCflag(tmp),2);
                 
-                % Bit_3: Checking no gaps on layers
+                % Bit_3: Checking no gaps on layers of Height,
+                % Temperature and Relative Humidity
                 tmp = arrayfun(@(i) ~any(isnan(data(i).HGHT) & data(i).HGHT<topH),[1:nobs]);
+                tmp = and(tmp, arrayfun(@(i) ~any(isnan(data(i).TEMP) & data(i).HGHT<topH),[1:nobs]));
+                tmp = and(tmp, arrayfun(@(i) ~any(isnan(data(i).RELH) & data(i).HGHT<topH),[1:nobs]));
                 QCflag(tmp) = bitset(QCflag(tmp),3);
 
                 % Bit_4: Checking the consistent decrease in Pressure
@@ -181,7 +184,7 @@ for n_x = 1:mxN_x,    % number of stations
                     % beggining)
                     [tmppath,tmpfile,ext] = fileparts(filen);
 
-                    fp = fopen(fullfile(OUTPATH,[outfilen '.dat']),'w');
+                    fp = fopen(fullfile(OUTPATH,[outfilen(1:end-3) '.dat']),'w');
                     month = 99;
                     day = 99;
                     hour = 99;
@@ -201,7 +204,7 @@ for n_x = 1:mxN_x,    % number of stations
                 for i=1:nobs,
                     idxobs = idxobs + 1;
                     if QCflag(i) ~= 15,  % 15 corresponds to all Quality test passed
-                                         %continue;
+                        continue;
                         QC(n_x,n_y,idxobs) = QCflag(i);
                     else
                         QC(n_x,n_y,idxobs) = QCflag(i);
@@ -315,7 +318,7 @@ for n_x = 1:mxN_x,    % number of stations
                 end
                 
                 %% Writing the whole data in a NetCDF file
-                ncfile =  fullfile(OUTPATH,[outfilen '.nc']);
+                ncfile =  fullfile(OUTPATH, outfilen);
             
                 % Writing 4-D variables in NetCDF file:
                 for j=1:length(idxcol),
