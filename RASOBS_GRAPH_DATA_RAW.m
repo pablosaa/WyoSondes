@@ -362,16 +362,25 @@ function [PROFILER, TimePROF, Tnumobs] = InitializeProfiler(data,OBST,H_top);
     nvar = length(names);
     Nobs = length(OBST);
     % Converting the OBST variable to Matlab datenum format:
-    tmp = cell2mat(textscan(sprintf('20%8.2f',OBST),...
-                            '%4f%2f%5f',Nobs,'CollectOutput',1));
+    yy = round(OBST/1e4);     % years-2000
+    mm = round((OBST-yy*1e4)/1e2);   % months
+    dd = (OBST-yy*1e4-mm*1e2);       % days+hour/24
+    Tnumobs = datenum(2000+yy, mm, dd);
+    
+    %tmp = cell2mat(textscan(sprintf('20%8.2f',OBST),...
+    %                        '%4f%2f%5f',Nobs,'CollectOutput',1));
 
-    Tnumobs = datenum(tmp);
     Tnumpro = [Tnumobs(1):median(diff(Tnumobs)):Tnumobs(end)]';
     Npro = length(Tnumpro);
     
     % index of the highest layer below 15km:
-    hmax = arrayfun(@(i) max(find(data(i).HGHT<H_top)),[1:Nobs]);
-    PROFILER = zeros(Npro,max(hmax),nvar)*NaN;
+    %hmax = arrayfun(@(i) max(find(data(i).HGHT<H_top)),[1:Nobs]);
+    hmax = 0;
+    for i=1:Nobs,
+        tmp = max(find(data(i).HGHT<H_top));
+        if ~isempty(tmp), hmax(i) = tmp; end
+    end
+    PROFILER = zeros(Npro, max(hmax), nvar)*NaN;
     for i=1:Nobs,
         [tmp, idx] = min(abs(Tnumobs(i)-Tnumpro));
         for j=1:nvar,

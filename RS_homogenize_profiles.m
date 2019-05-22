@@ -97,12 +97,12 @@ OUTPATH = '/home/pga082/GFI/data/RT/';
 %% The cell string 'STATIONS' must be organized according to
 % the (Longitude,Latitude) grid cell desired into the NetCDF file.
 % e.g. When only one file is specified, then the grid as only one point (1,1).
-STATIONS = {'polargmo';'enas';'enbj';'enan'}; %{'norderney'}; %;
+STATIONS = {'enzv'}; %{'polargmo';'enas';'enbj';'enan'}; %{'norderney'}; %;
 [mxN_x, mxN_y] = size(STATIONS);
 
 origin_str = '';   % string containing information about the origin RS
                    
-SimTag = 'nansLegacy';  % any simulation tag (short string max 8 char) 'fino1';
+SimTag = '_01COTUR';  % any simulation tag (short string max 8 char) 'fino1';
                    
 %% The Database is orginized following the WRF-grid as close as possible:
 % * (x_n, y_n): are the coordinates of the specified stations, when only
@@ -111,7 +111,7 @@ SimTag = 'nansLegacy';  % any simulation tag (short string max 8 char) 'fino1';
 % sorted according to the readed from the directory there the files
 % are located: A = dir([fullfile(INPATH, num2str(years)), '*.mat'])
 
-years  = [2008:2018];
+years  = [2008:2013];
 N_year = length(unique(years));
 
 % Defining NetCDF and ASCII output file:
@@ -131,7 +131,7 @@ for n_x = 1:mxN_x,    % number of stations
         for i_year=1:N_year,
             INPATH = ['/home/pga082/GFI/data/RASOBS/'...
                       STATIONS{n_x,n_y} '/' num2str(years(i_year))];
-            A = dir(fullfile(INPATH, '*.mat'));
+            A = dir(fullfile(INPATH, 'RS_*.mat'));
             N_f = length(A);
             for f = 1:N_f,       % number of files in directory
                 filen = fullfile(INPATH, A(f).name);
@@ -204,7 +204,8 @@ for n_x = 1:mxN_x,    % number of stations
                 for i=1:nobs,
                     idxobs = idxobs + 1;
                     if QCflag(i) ~= 15,  % 15 corresponds to all Quality test passed
-                        continue;
+                                         %continue; Including even
+                                         %bad profiles!
                         QC(n_x,n_y,idxobs) = QCflag(i);
                     else
                         QC(n_x,n_y,idxobs) = QCflag(i);
@@ -232,48 +233,54 @@ for n_x = 1:mxN_x,    % number of stations
                             SURFVars(idxobs,k) = NaN;
                             continue;
                         end
-                        eval(['SURFVars(idxobs,k) = interp1(Zunq(tmp),data(i).' surface_names{k} '(Iunq(tmp)),0,''linear'',''extrap'');']);
+                        % For relative humidity, the extrapolation
+                        % is done via nearest value, since it has
+                        % been found that linear extrapolation can
+                        % produce negative of higher than 100%
+                        % values:
+                        if strcmp(surface_names{k},'RELH'),
+                            interpmethod = 'nearest';
+                        else
+                            interpmethod = 'linear';
+                        end
+                                
+                        eval(['SURFVars(idxobs,k) =interp1(Zunq(tmp),data(i).'...
+                        surface_names{k} '(Iunq(tmp)),0,interpmethod,''extrap'');']);
                         
                     end
 
                     % Interpolating the profile variables to fixed layers below topH:
                     tmp = Iunq(find(Zunq <= topH)); %find(data(i).HGHT<=topH);
                     
-                    %try
-                        h_tmp = data(i).HGHT(tmp);
-                        Nh_tmp = length(h_tmp);
-                        hi = structfun(@(x) h_tmp(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
-                        vi = structfun(@(x) x(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
-                        tt = structfun(@(l) length(l), vi);
-                        names = fieldnames(vi);
-                        for k=1:length(names),
-                            Xin = getfield(hi,names{k});
-                            Yin = getfield(vi,names{k});
-                            if tt(k)>fix(Nh_tmp/2),
-                                Vinter = interp1(Xin,Yin,H0,'linear','extrap');
-                           else
-                                    Vinter = NaN*ones(nlay,1);
-                                    for badin=1:tt(k),
-                                        [dummy, Idxin] = min(abs(Xin(badin)-H0));
-                                        Vinter(Idxin) = Yin(badin);
-                                    end
-                           end
-                           eval(['TEMPVars.' names{k} '=Vinter;']);
-                           %if isempty(tmp) | length(tmp)<2,
-                           %if any(structfun(@(x) isempty(x(tmp(~isnan(x(tmp))))), data(i))),
-                           %TEMPVars = structfun(@(x) (NaN*H0),data(i),...
-                           %'UniformOutput',false);
-                        
-                           %else
-                           %TEMPVars = structfun(@(x) (interp1(x,vi,H0,'linear','extrap')), data(i), 'UniformOutput,1)
-                           %TEMPVars = structfun(@(x) (interp1(data(i).HGHT(tmp(~isnan(x(tmp)))),...
-                           %x(tmp(~isnan(x(tmp)))),H0,...
-                           %'linear','extrap')),...
-                           %data(i), 'UniformOutput',false);
+                    h_tmp = data(i).HGHT(tmp);
+                    Nh_tmp = length(h_tmp);
+                    hi = structfun(@(x) h_tmp(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
+                    vi = structfun(@(x) x(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
+                    tt = structfun(@(l) length(l), vi);
+                    names = fieldnames(vi);
+                    for k=1:length(names),
+                        Xin = getfield(hi,names{k});
+                        Yin = getfield(vi,names{k});
+                        % in case of Relative Humidity, the surface
+                        % values is included for the interpolation
+                        % to avoid high values or negarive values:
+                        if strcmp(names{k},'RELH'),
+                            Xin = [0; Xin];
+                            Yin = [SURFVars(idxobs,3); Yin];
+                        end
+                        if tt(k)>fix(Nh_tmp/2),
+                            Vinter = interp1(Xin,Yin,H0,'linear','extrap');
+                        else
+                            Vinter = NaN*ones(nlay,1);
+                            for badin=1:tt(k),
+                                [dummy, Idxin] = min(abs(Xin(badin)-H0));
+                                Vinter(Idxin) = Yin(badin);
+                            end
                        end
-                       %catch me
-                       % disp(i);
-                       %end
+                       eval(['TEMPVars.' names{k} '=Vinter;']);
+                       
+                    end
+
                     % Converting the Height units from m to km and from
                     % station level to a.s.l.:
                     TEMPVars.HGHT = (TEMPVars.HGHT)/1e3;  %+metvar.SELV(i)
