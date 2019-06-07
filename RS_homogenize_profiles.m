@@ -111,7 +111,7 @@ SimTag = '_01COTUR';  % any simulation tag (short string max 8 char) 'fino1';
 % sorted according to the readed from the directory there the files
 % are located: A = dir([fullfile(INPATH, num2str(years)), '*.mat'])
 
-years  = [2008:2013];
+years  = [2014:2018];
 N_year = length(unique(years));
 
 % Defining NetCDF and ASCII output file:
@@ -227,9 +227,10 @@ for n_x = 1:mxN_x,    % number of stations
                         eval(['tmp = find(Zunq<=topH & ~isnan(data(i).'...
                               surface_names{k} '(Iunq)));']);
                         
-                        % In case no profile is available in the
+                        % In case no profile is available or less
+                        % than 3 points are available in the
                         % lower Atmospheric layers:
-                        if isempty(tmp),
+                        if isempty(tmp) | length(tmp)<3,
                             SURFVars(idxobs,k) = NaN;
                             continue;
                         end
