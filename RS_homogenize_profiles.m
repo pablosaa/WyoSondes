@@ -16,7 +16,7 @@ clear all;
 close all;
 
 % boolean parameters
-TXTF = false;    % set TRUE if a ASCII file as output is wanted
+TXTF = false;    % set TRUE if an ASCII file as output is wanted
                  % (old version)
 
 
@@ -59,6 +59,7 @@ layers_var = {'HGHT','PRES','TEMP','RELH','CLOUD','RAIN'};
 wrf_surfname = {'PSFC','Surface Pressure','hPa';
                 'T2','2-m Temperature','K';
                 'Q2','Surface Relative Humidity','%'};
+
 wrf_varname = {'PHB','P','T','QVAPOR','QCLOUD','QRAIN','QICE', ...
                'QSNOW','QGRAUP'};
 
@@ -66,6 +67,7 @@ wrf_locname = {'HGT','Station Altitude','km';
               'LAT','Sation Latitude','deg';
               'LON','Station Longitude','deg'};
 date_name = {'year','month','day','hour'};
+
 % Radiosonde variables to load:
 nc_metadata = {
     'HGHT',    'Geopotential Height','km';
