@@ -23,7 +23,7 @@ wh_unit = 'km';
 % definition of labels
 rosetext = {'N','NE','E','SE','S','SW','W','NW'};
 
-load('../../data/RASOBS/enzv/2008/RS_Y2008-2008_M01-12_D01-31_H00-18.mat');
+%load('../../data/RASOBS/enzv/2008/RS_Y2008-2008_M01-12_D01-31_H00-18.mat');
 
 i = 500;
 
@@ -44,17 +44,15 @@ U0 = zeros(size(Ux));
 V0 = zeros(size(Vy));
 
 % creating canvas:
-ax = gca;
+ax = ha.hodo;
 GridColor = [.5 .5 .5];
 GridLine = ':';
 TextSize = 12;
 
 Rmax = max(WS);
-%if Rmax<20,
-%    R = unique(10*ceil([1:Rmax]/10));
-%else
-    R = [1:Rmax];%unique(10*floor([1:Rmax]/10));
-    %end
+
+R = [0:5:10*floor(Rmax/10)];
+
 if length(R)>6,
     R = R(1:2:end);
 end
@@ -67,7 +65,8 @@ xx = sin(A')*R;
 ch = plot(xx,yy,'LineStyle',GridLine,'Color',GridColor);
 axis equal;
 hold on;
-[NN, iamin] = min(hist(WD,[0 pi/2  pi 3/2*pi 2*pi]));
+[NN, iamin] = min(hist(WD, [0, pi/4, pi/2, 3/4*pi, pi,...
+                    5/4*pi, 3/2*pi, 3/2*pi, 2*pi]));
 
 % indexes for the wind-rose octants 
 iradial = [1, 45, 90, 135, 180, 225, 270, 315];
@@ -76,8 +75,8 @@ iradial = [1, 45, 90, 135, 180, 225, 270, 315];
 rh = plot(xx(iradial,:)', yy(iradial,:)','LineStyle',GridLine,'Color',GridColor);
 txtlabel = ceil(rad2deg(A(iradial)));
 Alabel = text(1.1*xx(iradial,end),1.1*yy(iradial,end),rosetext,'FontSize',TextSize);
-Rlabel = text(1.01*xx(iradial(2*iamin),[1:end-1]),...
-              1.1*yy(iradial(2*iamin),[1:end-1]),...
+Rlabel = text(1.01*xx(iradial(iamin),[1:end-1]),...
+              1.1*yy(iradial(iamin),[1:end-1]),...
               num2cell(R(1:end-1)),'FontSize',TextSize);
 
 set(ax, 'Color','none','Box','off','FontSize',13,...
@@ -97,9 +96,22 @@ Hdata = text(Ux(idxh), Vy(idxh), Hlabel);
 %view([90 -90]);
 
 hbar = colorbar('westoutside'); 
-set(hbar,'Position',get(hbar,'Position').*[1.05 1.1 .6 .8],'FontSize',TextSize);
+set(hbar,'Position',get(hbar,'Position').*[1 1.1 .5 .8],'FontSize',TextSize);
 title(hbar,'km','FontSize',TextSize);
 caxis([0 min(15,max(H))]);
-colormap('winter');
+colormap(gca,'winter');
 %end
+
+
+%% HOW to update data:
+% 0) update canvas (change radial scope and labels?)
+% 1) calculate Ux Vy U0 V0
+% 2) update new vectors:
+%    > set(h,'XData',U0,'YData',V0,'UData',Ux,'VData',Vy)
+% 3) update altitude line:
+%    > set(sh,'XData',[Ux Ux],'YData',[Vy Vy],'Zdata',[U0 V0],'CData',[H H])
+% 4) update altitude lavels:
+%    > arrayfun(@(i) set(Hdata(i),'String',Hlabel{i},'Position',[Ux(idxh(i)) Vy(idxh(i))]),[1:10])
+%
+
 % end of function
