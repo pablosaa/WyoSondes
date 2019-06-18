@@ -9,8 +9,8 @@ function [varargout] = RASOBS_GRAPH_DATA_RAW(varargin)
 % See: LICENSE.TXT
 % ---------------------------------------------------------------
 % TODO:
-% * QI control flag 
-% * 
+% * QI include control flag 
+% * add button to run RS_homogenize
 % ---------------------------------------------------------------    
 if nargin==0,
     % open file browser to load .mat file
@@ -114,8 +114,11 @@ legend('show','location','southwest');
 set(findobj('Tag','legend'),'FontSize',FoSi,'Color','none');
 
 %% Adding extra Axis for Hodogram
-ha.hodo = subplot(6,4,[7,8,11,12]); %axis('Position',[0.35 0.7 0.2 0.2]);
-Wind_hodograph;
+ha.ax(4) = subplot(6,4,[7,8,11,12]); %axis('Position',[0.35 0.7 0.2 0.2]);
+ha.hodog = Wind_hodograph(data(i(1+span)).SKNT,...
+                          data(i(1+span)).DRCT,...
+                          data(i(1+span)).HGHT,...
+                          'heights',0,'axes',ha.ax(4));
 
 %% Sub-plot 2 is for the 2D time series o RS profiles, default TEMP
 ha.ax(2) = subplot(6,4,[13:20]); %4:5]);
@@ -200,7 +203,7 @@ uicontrol('style','pushbutton','Units','normalized',...
           'String','Close','Callback','close(gcf)');
 % addlistener(SliderH, 'Value', 'PostSet', @callbackfn);
 
-% ------------- SLIDERS -------------------
+% ------------- DROP MENUS -------------------
 % Menu with the Profile variables
 uicontrol('style','text','String','Profile Variable:','FontSize',FoSi,...
           'Units','normalized','Position',[0.55 0.9 0.15 0.0234]);
@@ -252,6 +255,10 @@ function update_time0(ho,eventdata,ha,xvar,data)
 
     % changing vertical line indicating time
     set(ha.htl,'XData',[1 1]*xvar(k));
+    
+    % updating Hodograph:
+    Wind_hodograph(data(k).SKNT, data(k).DRCT,...
+                   data(k).HGHT,'update',ha.hodog);
     return;
 end
    
