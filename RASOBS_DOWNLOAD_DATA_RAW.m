@@ -1,43 +1,51 @@
 % [data, metinfo, metadata] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour, [OPTIONALS]);
 % This function gets the 'DATA_raw' of the soundings (raob) from the
 % Wyoming University internet site (http://weather.uwyo.edu);
+%
 % INPUT
-    % station-> (string) Code for the station to download;
-    % year  --> (numeric) Range for Year of the date we want to download;
-    % month --> (numeric) Range for Month of the date we want to dowload;
-    % day   --> (numeric) Range for Day of the date we want to download;
-    % hour  --> (numeric) Range for Hour of the date we want to download [00,12];
-    % -- FOLLOWING OPTION INPUTS (keyword value pairs)
-    % 'netcdf', logical true/false --> whether to storage as NetCDF file;
-    % 'csvfile', logical true/false --> whether to storage as CSV files;
-    % 'matfile', logical true/false --> whether to storage as v7 MATLAB files;
-    % 'outputpath', string '/path_to/storage/' --> Dir where files are
-    % storaged;
-    % 'waiting', numeric # -> seconds to wait before next download;
-    % -- Default options:
-    % 'matfile'->true,
-    % 'outputpath'->'../data/RASOBS/station/yyyy/',
-    % 'csvfile'->false, 'netcdf'->false, and 'waiting'->3
+% station-> (string) Code for the station to download;
+% year  --> (numeric) Range for Year of the date we want to download;
+% month --> (numeric) Range for Month of the date we want to dowload;
+% day   --> (numeric) Range for Day of the date we want to download;
+% hour  --> (numeric) Range for Hour of the date we want to download [00,12];
+%
+% ** FOLLOWING OPTION INPUTS (keyword value pairs)
+% 'netcdf', logical true/false --> whether to storage as NetCDF file;
+% 'csvfile', logical true/false --> whether to storage as CSV files;
+% 'matfile', logical true/false --> whether to storage as v7 MATLAB files;
+% 'outputpath', string '/path_to/storage/' --> Dir where files are
+% storaged;
+% 'waiting', numeric # -> seconds to wait before next download;
+%
+% ** Default options:
+% 'matfile'->true,
+% 'outputpath'->'../data/RASOBS/station/yyyy/',
+% 'csvfile'->false, 'netcdf'->false, and 'waiting'->3
+%
 % OUTPUT
-    % data --> Structure data containing the RS data and information.
-    % In case of unsuccessful downloading it retures empty variable.
-    % OPTIONAL OUTPUT
-    % metinfo --> Sounding Station Parameters and Indices for every
-    % profile (see HTML http://weather.uwyo.edu/upperair/indices.html)
-    %
-    % A new file can be created in any or all formats -> CSV, NetCDF or
-    % MATLAB binary format (depending on optional input value pairs e.g. 'yyyymmdd_hh.csv', 'yyyymmdd.nc' or 'yyyymmdd.mat').
-    % This file is saved by default in the following folder:
-    % '../data/RASOBS/namestation/yyyy/'
-    % or in the specified 'outputpath' option.
-    % 
-    % The units for the profile variables are (columnwise):
-    % {hPa,  m, °C, °C, %, g/kg, deg, knot, K, K, K}
-    % and are stored as a member variable named UNITS in the optional
-    % structure output metinfo, i.e. metinfo.UNITS
-% (c) 2018 P. Saavedra Garfias, UNIVERSITY OF BERGEN
+% data --> Structure data containing the RS data and information.
+% In case of unsuccessful downloading it retures empty variable.
+%
+% OPTIONAL OUTPUT
+% metinfo --> Sounding Station Parameters and Indices for every
+% profile (see HTML http://weather.uwyo.edu/upperair/indices.html)
+%
+% A new file can be created in any or all formats -> MATLAB binary
+% format, netCDF or CVS (depending on optional input value pairs e.g. 'yyyymmdd_hh.csv', 'yyyymmdd.nc' or 'yyyymmdd.mat').
+% This file is saved by default in the following folder:
+% '../data/RASOBS/namestation/yyyy/'
+% or in the specified 'outputpath' option.
+% 
+% The units for the profile variables are (columnwise):
+% {hPa,  m, °C, °C, %, g/kg, deg, knot, K, K, K}
+% and are stored as a member variable named UNITS in the optional
+% structure output metinfo, i.e. metinfo.UNITS
+%
+% ---
+% (c) 2018, P. Saavedra Garfias
+% Geophysical Institute, UNIVERSITY OF BERGEN
 % Email: pablo.saa@uib.no
-% See: LICENSE.TXT
+% See: LICENSE
 % ---------------------------------------------------------------
 
 function varargout = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour, varargin);

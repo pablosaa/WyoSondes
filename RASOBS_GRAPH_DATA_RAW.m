@@ -1,12 +1,15 @@
 function [varargout] = RASOBS_GRAPH_DATA_RAW(varargin)
-% Function to create basic visualization from the radiosonde data
-% downloaded from the Wyoming University and fetched by the Matlab/Octave
+% Function for basic visualization from the radiosonde data
+% privided by the Wyoming University and fetched by the Matlab/Octave
 % function  RASOBS_DOWNLOAD_DATA_RAW.
-% This function is mostly useful for large dataset rather than for simgle
-% profiles.
-% (c) 2018 P. Saavedra Garfias, UNIVERSITY OF BERGEN
+% This function is mostly useful for large dataset rather than for few
+% or simgle radiosonde profiles.
+%
+% ---
+% (c) 2018, P. Saavedra Garfias
+% Geophysical Institute, UNIVERSITY OF BERGEN
 % Email: pablo.saa@uib.no
-% See: LICENSE.TXT
+% See: LICENSE
 % ---------------------------------------------------------------
 % TODO:
 % * QI include control flag 
@@ -39,7 +42,8 @@ if nspan>nsonde,
 end
 % Here are defined fine-tune parameters Octave/Matlab dependent:
 if exist('OCTAVE_VERSION','builtin'),
-    % Fosi: FontSize. 
+    graphics_toolkit("gnuplot");
+    % Fosi: FontSize.
     FoSi = 16;
     colorlin = summer(nspan);
 else
