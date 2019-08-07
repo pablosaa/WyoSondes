@@ -183,8 +183,10 @@ and by selecting any profile variable a 2D time series can be easily plotted, fo
 The visualization for the .csv files is not supported.
 
 
+## NOTE: IGRA Weather Balloon
+Alternative Radiosonde data can be found at the ![Integrated Global Radiosonde Archive (IDRA)](https://www.ncdc.noaa.gov/data-access/weather-balloon/integrated-global-radiosonde-archive), with most of the stations also covered by Wyoming University there are others which are additionally available at IDRA data bank. The IDRA data files, however, can be accessed directly from their FTP server as compressed files for the entire period of availability. Therefore a tool like WyoSonde is not needed. 
 
+---
+(c) 2018 P. Saavedra Garfias,<br> Geophysical Institute,<br> UNIVERSITY OF BERGEN
 
-(c) 2018 P. Saavedra Garfias, Geophysical Institute, UNIVERSITY OF BERGEN
-
-See LICENSE.TXT
+See LICENSE

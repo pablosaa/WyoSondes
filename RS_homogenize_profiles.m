@@ -28,7 +28,7 @@
 % OUTPUTPATH/station/years/*.mat
 % 
 % (c) 2018 Pablo Saavedra Garfias, Geophysical Institute, University of Bergen
-% See LICENSE.TXT
+% See LICENSE
 % --------------------------------------------------------------------------------------
 function [] = RS_homogenize_profiles(varargin)
 
@@ -90,7 +90,7 @@ function [] = RS_homogenize_profiles(varargin)
     % ASSIGNUNG PARAMETERS with default values:
     % boolean parameters:
     if ~exist('TXTF','var'),
-        TXTF = false    % TRUE for ASCII output file (old version)
+      TXTF = false;    % TRUE for ASCII output file (old version)
     end
     % Output path:
     if ~exist('OUTPATH','var'),
@@ -168,16 +168,19 @@ function [] = RS_homogenize_profiles(varargin)
     'RELH',    'Relative Humidity','%';...
     'MIXR',    'Mixing Ratio', 'g/kg';...
     'CLOUD',   'Cloud Water Content','g/m^3';...
-    'RAIN','Rain Water Content','g/m^3';...
-    'IWC',  'Ice Content','g/m^3';...
-    'SNOW', 'Snow Content','g/m^3';...
-    'GRAUPEL','Graupel Content','g/m^3';...
-    'DRCT', 'Wind Direction','deg';...
-    'SKNT', 'Wind Speed','knot'...
+    'RAIN',    'Rain Water Content','g/m^3';...
+    'IWC',     'Ice Content','g/m^3';...
+    'SNOW',    'Snow Content','g/m^3';...
+    'GRAUPEL', 'Graupel Content','g/m^3';...
+    'DRCT',    'Wind Direction','deg';...
+    'SKNT',    'Wind Speed','knot'...
     };
 
-    % quality factor to storage in mat-file
+    % quality factor of the profiles to storage in mat-file
     QC = [];
+    
+    % weather flag of the profiles: 1=clear sky, 2=cloudy, 3=rainy
+    WC = [];
     
     % Indexing for NetCDF files:
     % * this is index for different stations
@@ -226,7 +229,8 @@ function [] = RS_homogenize_profiles(varargin)
                 STATIONS{n_x,n_y} '/' num2str(years(i_year))];
                 A = dir(fullfile(INPATH, 'RS_*.mat'));
                 N_f = length(A);
-                % number of files in directory:
+		
+				% number of files in directory:
                 for f = 1:N_f,
                     filen = fullfile(INPATH, A(f).name);
                     
@@ -244,7 +248,8 @@ function [] = RS_homogenize_profiles(varargin)
                     end
                     nobs  = length(data);
                 
-                    % Quality Control flag 8 bits:
+                    % ----------------------------------------
+                    % ** Quality Control flag 8 bits:
                     % bit 1: height reaches at-least 10km
                     % bit 2: height increases monotonilcally
                     % bit 3: no gaps in leyers
@@ -272,6 +277,7 @@ function [] = RS_homogenize_profiles(varargin)
 
                     %% QC = [QC;QCflag];
 
+                    
                     % ---------------------------------------------------------------
                     % Open ASCII file to store the data for the RT code:
                     if ~exist('fp','var') & TXTF,
@@ -296,224 +302,260 @@ function [] = RS_homogenize_profiles(varargin)
                     idxobs=0;      % index for only quality passed profiles
                                
                     % Homogenazing the layes for all profiles:
-                    for i=1:nobs,
-                        idxobs = idxobs + 1;
-                        % 15 corresponds to all Quality test passed
-                        %continue; Including even bad profiles!
-                        if QCflag(i) ~= 15,
-                            QC(n_x,n_y,idxobs) = QCflag(i);
-                        else
-                            QC(n_x,n_y,idxobs) = QCflag(i);
-                        end
-
-                        % Extracting the date for the specific Observation:
-                        yy = fix(metvar.OBST(i)/1e4);
-                        month = fix(metvar.OBST(i)/1e2) - yy*1e2;
-                        day   = fix(metvar.OBST(i)) - yy*1e4 - month*1e2;
-                        hour = 24*(metvar.OBST(i)-fix(metvar.OBST(i)));
-                        ndate(idxobs,:) = [2000+yy, month, day, hour];
-
-                        % Converting Temperature units from C to Kelvin:
-                        data(i).TEMP = data(i).TEMP+273.15;
-
-                        % getting the Surface Data (extrapolating to Height 0):
-                        [Zunq, Iunq] = unique(data(i).HGHT);
-                        for k=1:length(surface_names),
-                            eval(['tmp = find(Zunq<=topH & ~isnan(data(i).'...
-                            surface_names{k} '(Iunq)));']);
-                        
-                            % In case no profile is available or less
-                            % than 3 points are available in the
-                            % lower Atmospheric layers:
-                            if isempty(tmp) | length(tmp)<3,
-                                SURFVars(idxobs,k) = NaN;
-                                continue;
-                            end
-                            % For relative humidity, the extrapolation
-                            % is done via nearest value, since it has
-                            % been found that linear extrapolation can
-                            % produce negative of higher than 100%
-                            % values:
-                            if strcmp(surface_names{k},'RELH'),
-                                interpmethod = 'nearest';
-                            else
-                                interpmethod = 'linear';
-                            end
+                    for i = 1:nobs,
+                      idxobs = idxobs + 1;
+                           % 15 corresponds to all Quality test passed
+                           %continue; Including even bad profiles!
+                      if QCflag(i) ~= 15,
+                        QC(n_x,n_y,idxobs) = QCflag(i);
+                      else
+                        QC(n_x,n_y,idxobs) = QCflag(i);
+                      end
                                 
-                            eval(['SURFVars(idxobs,k) =interp1(Zunq(tmp),data(i).'...
-                            surface_names{k} '(Iunq(tmp)),0,interpmethod,''extrap'');']);
+                   % Extracting the date for the specific Observation:
+                      yy = fix(metvar.OBST(i)/1e4);
+                      month = fix(metvar.OBST(i)/1e2) - yy*1e2;
+                      day   = fix(metvar.OBST(i)) - yy*1e4 - month*1e2;
+                      hour = 24*(metvar.OBST(i)-fix(metvar.OBST(i)));
+                      ndate(idxobs,:) = [2000+yy, month, day, hour];
+
+                      % Converting Temperature units from C to Kelvin:
+                      data(i).TEMP = data(i).TEMP+273.15;
+
+											% getting the Surface Data (extrapolating to Height 0):
+                      [Zunq, Iunq] = unique(data(i).HGHT);
+                      for k=1:length(surface_names),
+                        eval(['tmp = find(Zunq<=topH & ~isnan(data(i).'...
+																surface_names{k} '(Iunq)));']);
                         
+                        % In case no profile is available or less
+                        % than 3 points are available in the
+                        % lower Atmospheric layers:
+                        if isempty(tmp) | length(tmp)<3,
+                          SURFVars(idxobs,k) = NaN;
+                          continue;
                         end
+												
+                        % For relative humidity, the extrapolation
+                        % is done via nearest value, since it has
+                        % been found that linear extrapolation can
+                        % produce negative of higher than 100%
+                        % values:
+                        if strcmp(surface_names{k},'RELH'),
+                          interpmethod = 'nearest';
+                        else
+                          interpmethod = 'linear';
+                        end
+                                
+                        eval(['SURFVars(idxobs,k) =interp1(Zunq(tmp),data(i).'...
+																surface_names{k} '(Iunq(tmp)),0,interpmethod,''extrap'');']);
 
-                        % Interpolating the profile variables to fixed layers below topH:
-                        tmp = Iunq(find(Zunq <= topH)); %find(data(i).HGHT<=topH);
-                    
-                        h_tmp = data(i).HGHT(tmp);
-                        Nh_tmp = length(h_tmp);
-                        hi = structfun(@(x) h_tmp(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
-                        vi = structfun(@(x) x(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
-                        tt = structfun(@(l) length(l), vi);
-                        names = fieldnames(vi);
-                        for k=1:length(names),
-                            Xin = getfield(hi,names{k});
-                            Yin = getfield(vi,names{k});
-                            % For Relative Humidity variable, the surface
-                            % values is included for the interpolation
-                            % to avoid high values or negarive values:
-                            if strcmp(names{k},'RELH'),
-                                Xin = [0; Xin];
-                                Yin = [SURFVars(idxobs,3); Yin];
-                            end
-                            if tt(k)>fix(Nh_tmp/2),
-                                Vinter = interp1(Xin,Yin,H0,'linear','extrap');
-                            else
-                                Vinter = NaN*ones(nlay,1);
-                                for badin=1:tt(k),
-                                    [dummy, Idxin] = min(abs(Xin(badin)-H0));
-                                    Vinter(Idxin) = Yin(badin);
-                                end
-                            end
-                            eval(['TEMPVars.' names{k} '=Vinter;']);
+												% end over k, number of surface_names
+                      end
+
+											% Interpolating the profile variables to fixed layers below topH:
+                      tmp = Iunq(find(Zunq <= topH)); %find(data(i).HGHT<=topH);
+                      
+                      h_tmp = data(i).HGHT(tmp);
+                      Nh_tmp = length(h_tmp);
+                      hi = structfun(@(x) h_tmp(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
+                      vi = structfun(@(x) x(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
+                      tt = structfun(@(l) length(l), vi);
+                      names = fieldnames(vi);
+                      for k=1:length(names),
+                        Xin = getfield(hi,names{k});
+                        Yin = getfield(vi,names{k});
+                         % For Relative Humidity variable, the surface
+                         % values is included for the interpolation
+                         % to avoid high values or negarive values:
+                        if strcmp(names{k},'RELH'),
+                          Xin = [0; Xin];
+                          Yin = [SURFVars(idxobs,3); Yin];
+                        end
+                        if tt(k)>fix(Nh_tmp/2),
+                          Vinter = interp1(Xin,Yin,H0,'linear','extrap');
+                        else
+                          Vinter = NaN*ones(nlay,1);
+                          for badin=1:tt(k),
+                            [dummy, Idxin] = min(abs(Xin(badin)-H0));
+                            Vinter(Idxin) = Yin(badin);
+                          end
+                        end
+                        eval(['TEMPVars.' names{k} '=Vinter;']);
                        
-                        end
+                      end
 
-                        % Converting the Height units from m to km and from
-                        % station level to a.s.l.:
-                        TEMPVars.HGHT = (TEMPVars.HGHT)/1e3;  %+metvar.SELV(i)
+											% Converting the Height units from m to km and from
+											% station level to a.s.l.:
+                      TEMPVars.HGHT = (TEMPVars.HGHT)/1e3;  %+metvar.SELV(i)
+		      
+											% **********************************************
+                      [TEMPVars.CLOUD, TEMPVars.RAIN, TEMPVars.IWC,...
+                       TEMPVars.SNOW, TEMPVars.GRAUPEL] = cloud_modell(TEMPVars.TEMP,...
+																																			 TEMPVars.RELH,TEMPVars.PRES);
 
-                        % --------------------------------------------------------
-                        [TEMPVars.CLOUD, TEMPVars.RAIN, TEMPVars.IWC,...
-                        TEMPVars.SNOW, TEMPVars.GRAUPEL] = cloud_modell(TEMPVars.TEMP,...
-                        TEMPVars.RELH,TEMPVars.PRES);
+                      names = fieldnames(TEMPVars);
+                      for j=1:length(names),
+                        eval(['ALLVARS(:,j,idxobs) = TEMPVars.' names{j} ';']);
+                      end
 
-                        names = fieldnames(TEMPVars);
-                        for j=1:length(names),
-                            eval(['ALLVARS(:,j,idxobs) = TEMPVars.' names{j} ';']);
-                        end
-                        clear TEMPVars;
-                    % --------------------------------------------------------------------
-                    % Finding the indexes for variables to store
-                    % from nc_metadata cell array (defined up)
-                    %idxcol = [2,1,3,5,12,13,14,15,16];   % index of variables to store
-                    idxcol = cellfun(@(x) find(strcmp(x,names)), nc_metadata(:,1));
+                      % ---------------------------------------------
+                      % ** Weather flag for the profiles:
+                      % bit 1: clear sky
+                      % bit 2: cloudy sky
+                      % bit 3: rainy
+                      % bit 4: no specification
+                      WCflag(i,1) = int8(0);
+                      if any( find(TEMPVars.CLOUD>0)),
+												% cloudy
+												WCflag(i) = bitset(WCflag(i), 2);
+											else
+												% clear
+												WCflag(i) = bitset(WCflag(i), 1);
+											end
+
+											% ad-doc estimation of rainy profile:
+											if WCflag(i) == 2 && all( TEMPVars.RELH(1:15) > 98),
+												WCflag(i) = bitset(WCflag(i), 3);
+											end
+											
+											clear TEMPVars;
+                        
+											% -----------------------------------------------
+											% Finding the indexes for variables to store
+											% from nc_metadata cell array (defined up)
+											%idxcol = [2,1,3,5,12,13,14,15,16];   % index of variables to store
+                      idxcol = cellfun(@(x) find(strcmp(x,names)), nc_metadata(:,1));
                     
-                    % Saving data into a ASCII file (TODO: mat
-                    % file?)
-                    if TXTF,
-                        fprintf(fp,'%2d %2d\n',day,hour); %n_x,1);
+                      % Saving data into a ASCII file:
+                      if TXTF,
+                        fprintf(fp,'%2d %2d\n',day,hour);
                         fprintf(fp,'%6.3f %10.3f %10.3f %10.3f\n',...
-                                metvar.SELV(i)/1e3,SURFVars(idxobs,:));
+																metvar.SELV(i)/1e3,SURFVars(idxobs,:));
             
-                        fprintf(fp,['%10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f ' ...
-                                    '%10.3f %10.3f\n'],transpose(ALLVARS(:,idxcol,idxobs)));
-                        %cellfun(@(k)
-                        %fprintf(fp,'%10.3f',transpose(k(i,:))),layers_var);
-                    end
+                        fprintf(fp,'%10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f\n',...
+																transpose(ALLVARS(:,idxcol,idxobs)));
+
+											end
                     
-                    % --
-                    % end over i: number of observations per File 
-                end
+											% --
+											% end over i: number of observations per File 
+										end
+										% ------------------------------------------------------------
+										size(QCflag)
+										size(WCflag)
+		    
+                    if TXTF,
+											% Writing the first line in ASCII file
+                      frewind(fp);
+                      fprintf(fp,'%02d %02d %02d %3d %3d %3d 2.5 2.5\n',month,day,hour,n_x,n_y,nlay);
+											% Closing ASCII file with "grid" data
+                      fclose(fp);
+                      clear fp;
+                    end
                 
-                if TXTF,
-                    % Writing the first line in ASCII file
-                    frewind(fp);
-                    fprintf(fp,'%02d %02d %02d %3d %3d %3d 2.5 2.5\n',month,day,hour,n_x,n_y,nlay);
-                    % Closing ASCII file with "grid" data
-                    fclose(fp);
-                    clear fp;
-                end
-                
-                %% Writing the whole data in a NetCDF file
-                ncfile =  fullfile(OUTPATH, outfilen);
-            
-                % Writing 4-D variables in NetCDF file:
-                for j=1:length(idxcol),
-                    if n_x==1 & n_y==1 & i_year==1,
+                    %% Writing the whole data in a NetCDF file
+                    ncfile =  fullfile(OUTPATH, outfilen);
+		    
+										% Writing 4-D variables in NetCDF file:
+                    for j=1:length(idxcol),
+                      if n_x==1 & n_y==1 & i_year==1,
                         nccreate(ncfile,wrf_varname{j},'Datatype','single',...
                                  'Dimensions',{'xn',mxN_x, 'yn', mxN_y,'lev',nlay,'time',Inf}, ...
                                  'Format','netcdf4','Deflate',true,'DeflateLevel',9,'FillValue',NaN);
+                      end
+                      ncwrite(ncfile,wrf_varname{j},...
+                              shiftdim(squeeze(ALLVARS(:,idxcol(j),:)),-2),...
+                              [n_x n_y 1 1+Last_obs]);
+                      ncwriteatt(ncfile,wrf_varname{j},'short_name',nc_metadata{j,1});
+                      ncwriteatt(ncfile,wrf_varname{j},'long_name',nc_metadata{j,2});
+                      ncwriteatt(ncfile,wrf_varname{j},'units',nc_metadata{j,3});
                     end
-                    ncwrite(ncfile,wrf_varname{j},...
-                            shiftdim(squeeze(ALLVARS(:,idxcol(j),:)),-2),...
-                            [n_x n_y 1 1+Last_obs]);
-                    ncwriteatt(ncfile,wrf_varname{j},'short_name',nc_metadata{j,1});
-                    ncwriteatt(ncfile,wrf_varname{j},'long_name',nc_metadata{j,2});
-                    ncwriteatt(ncfile,wrf_varname{j},'units',nc_metadata{j,3});
-                end
             
-                % Writting 3-D variables in NetCDF file:
-                for j=1:length(surface_names),
-                    if n_x==1 & n_y==1 & i_year==1,
+										% Writting 3-D variables in NetCDF file:
+                    for j=1:length(surface_names),
+                      if n_x==1 & n_y==1 & i_year==1,
                         nccreate(ncfile,wrf_surfname{j,1},'Datatype','single',...
                                  'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf},'Format', ...
                                  'netcdf4','Deflate',true,'DeflateLevel',9);
+                      end
+                      ncwrite(ncfile,wrf_surfname{j,1},shiftdim(SURFVars(:,j),-2),...
+                              [n_x, n_y, 1+Last_obs]);
+                      ncwriteatt(ncfile,wrf_surfname{j,1},'short_name',wrf_surfname{j,1});
+                      ncwriteatt(ncfile,wrf_surfname{j,1},'long_name',wrf_surfname{j,2});
+                      ncwriteatt(ncfile,wrf_surfname{j,1},'units',wrf_surfname{j,3});
                     end
-                    ncwrite(ncfile,wrf_surfname{j,1},shiftdim(SURFVars(:,j),-2),...
-                            [n_x, n_y, 1+Last_obs]);
-                    ncwriteatt(ncfile,wrf_surfname{j,1},'short_name',wrf_surfname{j,1});
-                    ncwriteatt(ncfile,wrf_surfname{j,1},'long_name',wrf_surfname{j,2});
-                    ncwriteatt(ncfile,wrf_surfname{j,1},'units',wrf_surfname{j,3});
-                end
 
-                if n_x==1 & n_y==1 & i_year==1,
-                    nccreate(ncfile,'QIDX','Datatype','int8', ...
-                             'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf},...
-                             'FillValue',NaN);
-                end
-                ncwrite(ncfile,'QIDX',shiftdim(QCflag,-2),[n_x, n_y, 1+Last_obs]);
-                ncwriteatt(ncfile,'QIDX','long_name','Profile Quality index');
-                ncwriteatt(ncfile,'QIDX','note:','15=good quality');
-                
-                % Writting 2-D variables in NetCDF file:
-                for j=1:length(wrf_locname),
+										% -- Quality Control index
                     if n_x==1 & n_y==1 & i_year==1,
+                      nccreate(ncfile,'QIDX','Datatype','int8', ...
+                               'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf},...
+                               'FillValue',NaN);
+                    end
+                    ncwrite(ncfile,'QIDX',shiftdim(QCflag,-2),[n_x, n_y, 1+Last_obs]);
+                    ncwriteatt(ncfile,'QIDX','long_name','Profile Quality index');
+                    ncwriteatt(ncfile,'QIDX','note:','15=good quality');
+
+										% -- Weather Control index
+										if n_x==1 & n_y==1 & i_year==1,
+                      nccreate(ncfile,'WEIDX','Datatype','int8', ...
+                               'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf},...
+                               'FillValue',NaN);
+                    end
+                    ncwrite(ncfile,'WEIDX',shiftdim(WCflag,-2),[n_x, n_y, 1+Last_obs]);
+                    ncwriteatt(ncfile,'WEIDX','long_name','Weather Type index');
+                    ncwriteatt(ncfile,'WEIDX','note:','1=clear, 2=cloudy, 6=rain');
+		    
+										% Writting 2-D variables in NetCDF file:
+                    for j=1:length(wrf_locname),
+                      if n_x==1 & n_y==1 & i_year==1,
                         nccreate(ncfile,wrf_locname{j,1},'Datatype','single',...
                                  'Dimensions',{'xn',mxN_x,'yn',mxN_y});
+                      end
+                      ncwrite(ncfile,wrf_locname{j,1},LOCVAR(j),[n_x, n_y]);
+                      ncwriteatt(ncfile,wrf_locname{j,1},'short_name',wrf_locname{j,1});
+                      ncwriteatt(ncfile,wrf_locname{j,1},'long_name',wrf_locname{j,2});
+                      ncwriteatt(ncfile,wrf_locname{j,1},'units',wrf_locname{j,3});
                     end
-                    ncwrite(ncfile,wrf_locname{j,1},LOCVAR(j),[n_x, n_y]);
-                    ncwriteatt(ncfile,wrf_locname{j,1},'short_name',wrf_locname{j,1});
-                    ncwriteatt(ncfile,wrf_locname{j,1},'long_name',wrf_locname{j,2});
-                    ncwriteatt(ncfile,wrf_locname{j,1},'units',wrf_locname{j,3});
-                end
-            
-                % Writting 1-D variables in NetCDF file:
-                for j=1:4,
-                    if n_x==1 & n_y==1 & i_year==1,
+										
+										% Writting 1-D variables in NetCDF file:
+                    for j=1:4,
+                      if n_x==1 & n_y==1 & i_year==1,
                         nccreate(ncfile,date_name{j},'Datatype','single',...                        
-                        'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf});
+																 'Dimensions',{'xn',mxN_x,'yn',mxN_y,'time',Inf});
+                      end
+                      ncwrite(ncfile,date_name{j},shiftdim(ndate(:,j),-2),...
+															[n_x, n_y, 1+Last_obs]);
                     end
-                    ncwrite(ncfile,date_name{j},shiftdim(ndate(:,j),-2),...
-                    [n_x, n_y, 1+Last_obs]);
-                end
             
-                Last_obs = Last_obs + idxobs;
-                clear ALLVARS SURFVars ndate;
+                    Last_obs = Last_obs + idxobs;
+                    clear ALLVARS SURFVars ndate;
                 
-                %--
-                % end over number of files (index f)
-            end
+										%--
+										% end over number of files (index f)
+								end
+								
+								% --
+								% end over years (index i_year)
+            end 
             
-            % --
-            % end over years (index i_year)
-        end 
-            
-        % Writting global variables:
-        origin_str = [origin_str, sprintf('[%03d,%03d]->%s(%s);',n_x,n_y,stationname,station)];
-        ncwriteatt(ncfile,'/','grid_x',NaN);
-        ncwriteatt(ncfile,'/','grid_y',NaN);
-        ncwriteatt(ncfile,'/','origin',origin_str);
-        ncwriteatt(ncfile,'/','Creation',datestr(today));
-        ncwriteatt(ncfile,'/','Contact','Pablo.Saavedra@uib.no');
-        ncwriteatt(ncfile,'/','Institution',['Geophysical Institute, ' ...
-                            'Uni-Bergen']);
-        % --
-        % end over y station (index n_y)
-    end 
+						% Writting global variables:
+            origin_str = [origin_str, sprintf('[%03d,%03d]->%s(%s);',n_x,n_y,stationname,station)];
+            ncwriteatt(ncfile,'/','grid_x',NaN);
+            ncwriteatt(ncfile,'/','grid_y',NaN);
+            ncwriteatt(ncfile,'/','origin',origin_str);
+            ncwriteatt(ncfile,'/','Creation',datestr(today));
+            ncwriteatt(ncfile,'/','Contact','Pablo.Saavedra@uib.no');
+            ncwriteatt(ncfile,'/','Institution',['Geophysical Institute, ' ...
+																									 'Uni-Bergen']);
+						% --
+						% end over y station (index n_y)
+				end 
     
-    % --
-    % end over x station (index n_x)
-end 
-return;
+				% --
+				% end over x station (index n_x)
+    end 
+    return;
 end
 % ============ End of main function RS_homogenize_profiles =================
 
@@ -524,32 +566,37 @@ end
 % Including Mätzler cloud model (to be reviewed)
 %
 
-function [LWC,LWR,IWC,SWC,GWC] = cloud_modell(T,RH,P)
-% INPUT:
-% T-> Temperature [K]
-% RH -> Relative Humidity [%]
-% P -> Pressure [hPa]
-% OUTPUT:
-% LWC -> Cloud Liquid Water Content [g/m3]
-% LWR -> Rain Liquid Water Content [g/m3]
-% LWG -> Graupel Liquid Water Content [g/m3]
-% NOTE: This is only valid for Clouds! for Rain, Graupel, Ice
-% and Snow an assignation function
-% still needs to be implemented.
+function [LWC, LWR, IWC, SWC, GWC] = cloud_modell(T, RH, P)
+	% INPUT:
+	% T-> Temperature [K]
+	% RH -> Relative Humidity [%]
+	% P -> Pressure [hPa]
+	% OUTPUT:
+	% LWC -> Cloud Liquid Water Content [g/m3]
+	% LWR -> Rain Liquid Water Content [g/m3]
+	% LWG -> Graupel Liquid Water Content [g/m3]
+	% NOTE: This is only valid for Clouds! for Rain, Graupel, Ice
+	% and Snow an assignation function
+	% still needs to be implemented.
 
-    b0 = 90;   % parameter b0 range from 85 to 90
-    tmp = find(RH>=b0 & T>=240);
-    % Cloud water content [g/m^3]:
-    LWC(1,:) = zeros(1,length(T));
-    LWC(1,tmp) = 2*((RH(tmp)-b0)/30).^2;  
-    % Rain Water content [g/m^3]:
-    LWR(1,:) = zeros(1,length(T));
-    % Cloud Ice content [g/m^3]:
-    IWC(1,:) = zeros(1,length(T));
-    % Show content [g/m^3]:
-    SWC(1,:) = zeros(1,length(T));
-    % Graupel content [g/m^3]:
-    GWC(1,:) = zeros(1,length(T));
+  b0 = 90;   % parameter b0 range from 85 to 90
+  tmp = find(RH>=b0 & T>=240);
+  
+	% Cloud water content [g/m^3]:
+  LWC(1,:) = zeros(1, length(T));
+  LWC(1,tmp) = 2*((RH(tmp)-b0)/30).^2;
+  
+	% Rain Water content [g/m^3]:
+  LWR(1,:) = zeros(1, length(T));
+  
+	% Cloud Ice content [g/m^3]:
+  IWC(1,:) = zeros(1, length(T));
+  
+	% Show content [g/m^3]:
+  SWC(1,:) = zeros(1, length(T));
+  
+	% Graupel content [g/m^3]:
+  GWC(1,:) = zeros(1, length(T));
 end
 
 % *************************************************************************
