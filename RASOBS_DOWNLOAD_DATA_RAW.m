@@ -108,7 +108,7 @@ idx_hr = 0;
 %% DOWNLOAD DATA FROM UNIVERSITY OF WYOMING's RADIOSONDE REPOSITORY
 for YEAR=year;
 
-    yyyy = sprintf('%4d',year);
+    yyyy = sprintf('%4d',YEAR);
     
     for MONTH = month,
         for DAY = day,
