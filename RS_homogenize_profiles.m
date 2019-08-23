@@ -32,163 +32,166 @@
 % --------------------------------------------------------------------------------------
 function [] = RS_homogenize_profiles(varargin)
 
-% checking input arguments:
-    switch(nargin)
-      case 0,
-        warning('Input arguments needed!');
-        return;
-      case 1,
-        if ischar(varargin{1}), % & exist(varargin{1},'file'),
-            matfile = varargin{1};            
-        else
-            error('When one input argument, it must be a string .MAT file name!');
+	% HOME base path:
+	HOME_BASE = getenv('HOME');
+
+	% checking input arguments:
+  switch(nargin)
+    case 0,
+      warning('Input arguments needed!');
+      return;
+    case 1,
+      if ischar(varargin{1}), % & exist(varargin{1},'file'),
+        matfile = varargin{1};            
+      else
+        error('When one input argument, it must be a string .MAT file name!');
+      end
+    otherwise,
+      for i=1:2:nargin,
+        MYARG = varargin{i};
+        MYVAL = varargin{i+1};
+        if ~ischar(MYARG),
+          error('Pair arguments need to be string!');
         end
-      otherwise,
-        for i=1:2:nargin,
-            MYARG = varargin{i};
-            MYVAL = varargin{i+1};
-            if ~ischar(MYARG),
-                error('Pair arguments need to be string!');
+        switch(MYARG),
+          case 'station',
+            if ~iscell(MYVAL),
+              error([MYARG ': needs cell array!']);
             end
-            switch(MYARG),
-              case 'station',
-                if ~iscell(MYVAL),
-                    error([MYARG ': needs cell array!']);
-                end
-                STATIONS = MYVAL;
-              case 'years',
-                if ~isnumeric(MYVAL),
-                    error([MYARG ': needs to be vector!']);
-                end
-                years = MYVAL;
-              case 'tag',
-                if ~ischar(MYVAL),
-                    error([MYARG ': needs a string!']);
-                end
-                SimTag = MYVAL;
-              case 'BASEPATH',
-                if ~ischar(MYVAL),
-                    error([MYARG ': needs characters!']);
-                end
-                BASEPATH = MYVAL;
-              case 'OUTPUTPATH',
-                if ~ischar(MYVAL),
-                    error([MYARG ': needs characters!']);
-                end
-                OUTPATH = MYVAL;
-              case 'TXT',
-                if ~islogical(MYVAL)
-                    error([MYARG ': needs false or true!']);
-                end
-                TXTF = MYVAL;
-              otherwise,
-                error(['Input arg ' MYARG ' not recognized!']);
+            STATIONS = MYVAL;
+          case 'years',
+            if ~isnumeric(MYVAL),
+              error([MYARG ': needs to be vector!']);
             end
+            years = MYVAL;
+          case 'tag',
+            if ~ischar(MYVAL),
+              error([MYARG ': needs a string!']);
+            end
+            SimTag = MYVAL;
+          case 'BASEPATH',
+            if ~ischar(MYVAL),
+              error([MYARG ': needs characters!']);
+            end
+            BASEPATH = MYVAL;
+          case 'OUTPUTPATH',
+            if ~ischar(MYVAL),
+              error([MYARG ': needs characters!']);
+            end
+            OUTPATH = MYVAL;
+          case 'TXT',
+            if ~islogical(MYVAL)
+              error([MYARG ': needs false or true!']);
+            end
+            TXTF = MYVAL;
+          otherwise,
+            error(['Input arg ' MYARG ' not recognized!']);
         end
-    end
+      end
+  end
     
-    % ASSIGNUNG PARAMETERS with default values:
-    % boolean parameters:
-    if ~exist('TXTF','var'),
-      TXTF = false;    % TRUE for ASCII output file (old version)
-    end
-    % Output path:
-    if ~exist('OUTPATH','var'),
-        OUTPATH = '/home/pga082/GFI/data/RT/';        
-    end
-    % Input path:
-    if ~exist('BASEPATH','var'),
-        BASEPATH = '/home/pga082/GFI/data/RASOBS/';
-    end
-    % Stations names:
-    if ~exist('STATIONS','var'),
-        warning('No Station cell has been specified!');
-    end
-    % years:
-    if ~exist('years','var'),
-        warning('No year range has been specified!');
-    end
-    % Simulations tag:
-    if ~exist('SimTag','var'),
-        SimTag = '';
-    end
+  % ASSIGNUNG PARAMETERS with default values:
+  % boolean parameters:
+  if ~exist('TXTF','var'),
+    TXTF = false;    % TRUE for ASCII output file (old version)
+  end
+  % Output path:
+  if ~exist('OUTPATH','var'),
+    OUTPATH = [HOME_BASE '/GFI/data/RT/'];        
+  end
+  % Input path:
+  if ~exist('BASEPATH','var'),
+    BASEPATH = [HOME_BASE '/GFI/data/RASOBS/'];
+  end
+  % Stations names:
+  if ~exist('STATIONS','var'),
+    warning('No Station cell has been specified!');
+  end
+  % years:
+  if ~exist('years','var'),
+    warning('No year range has been specified!');
+  end
+  % Simulations tag:
+  if ~exist('SimTag','var'),
+    SimTag = '';
+  end
 
-    %% Parameter definitions:
-    topH = 10100;   % top profile height [m]
-    MinLev = 40;   % minimum continues layers the RadioSonde must have
+  %% Parameter definitions:
+  topH = 10100;   % top profile height [m]
+  MinLev = 40;   % minimum continues layers the RadioSonde must have
+	
+  % Default layer altitudes (if not specified as input)
+  H0 = [[10:20:1500],...
+        [1550:50:3000],...
+        [3200:200:topH]];    % layer to homoginize [m]
 
-    % Default layer altitudes (if not specified as input)
-    H0 = [[10:20:1500],...
-          [1550:50:3000],...
-          [3200:200:topH]];    % layer to homoginize [m]
+  NH = 145;
+  H0 = 10*unique(floor(logspace(1,4,NH)/10));
+  tmp = smooth(diff(H0));
+  H0 = cumsum(tmp);   % standard Atmosphere altitude [m]
 
-    NH = 145;
-    H0 = 10*unique(floor(logspace(1,4,NH)/10));
-    tmp = smooth(diff(H0));
-    H0 = cumsum(tmp);   % standard Atmosphere altitude [m]
+  %% Definition of Pressure layers where to homogenize RS profiles
+  P0 = 1013; % Surface Reference Pressure [hPa]
+  M = 28.8; % Molar mass [gr/mol]
+  g = 9.807; % gravity acceleration [m/s^2]
+  R = 8.31446; % Molar gas constant [J/mol/K]
+  T0 = 290;   % Initial Ambient Temperature  [K]
+  % Lr = 6.5;   % Temperature lapse-rate [K/km]
+  %Pa = [[P0:-1.6:710],[680:-30:560],[510:-50:300]];
+  Pa = P0*exp(-M*g/R/T0*H0*1e-3);
+  %
 
-    %% Definition of Pressure layers where to homogenize RS profiles
-    P0 = 1013; % Surface Reference Pressure [hPa]
-    M = 28.8; % Molar mass [gr/mol]
-    g = 9.807; % gravity acceleration [m/s^2]
-    R = 8.31446; % Molar gas constant [J/mol/K]
-    T0 = 290;   % Initial Ambient Temperature  [K]
-                % Lr = 6.5;   % Temperature lapse-rate [K/km]
-                %Pa = [[P0:-1.6:710],[680:-30:560],[510:-50:300]];
-    Pa = P0*exp(-M*g/R/T0*H0*1e-3);
-    %
+  nlay = length(H0); % Number of layers for the homogenized layers
 
-    nlay = length(H0); % Number of layers for the homogenized layers
+  %% Definition of Variable names and attributes for NetCDF file:
+  % Variables needs to be included in the ASCII file
+  surface_names = {'PRES','TEMP','RELH'};
+  layers_var = {'HGHT','PRES','TEMP','RELH','CLOUD','RAIN'};
 
-    %% Definition of Variable names and attributes for NetCDF file:
-    % Variables needs to be included in the ASCII file
-    surface_names = {'PRES','TEMP','RELH'};
-    layers_var = {'HGHT','PRES','TEMP','RELH','CLOUD','RAIN'};
+  % metadata for the NetCDF file (in the storing order):
+  wrf_surfname = {'PSFC','Surface Pressure','hPa';...
+									'T2','2-m Temperature','K';...
+									'Q2','Surface Relative Humidity','%'};
 
-    % metadata for the NetCDF file (in the storing order):
-    wrf_surfname = {'PSFC','Surface Pressure','hPa';...
-    'T2','2-m Temperature','K';...
-    'Q2','Surface Relative Humidity','%'};
+  wrf_varname = {
+								 'PHB','P','T','RH','QVAPOR','QCLOUD','QRAIN','QICE', ...
+								 'QSNOW','QGRAUP','WINDDIR','WINDVEL'};
 
-    wrf_varname = {
-    'PHB','P','T','RH','QVAPOR','QCLOUD','QRAIN','QICE', ...
-    'QSNOW','QGRAUP','WINDDIR','WINDVEL'};
-
-    wrf_locname = {'HGT','Station Altitude','km';...
-    'LAT','Sation Latitude','deg';...
-    'LON','Station Longitude','deg'};
+  wrf_locname = {'HGT','Station Altitude','km';...
+								 'LAT','Sation Latitude','deg';...
+								 'LON','Station Longitude','deg'};
     
-    date_name = {'year','month','day','hour'};
+  date_name = {'year','month','day','hour'};
     
-    % Radiosonde variables to load:
-    nc_metadata = {
-    'HGHT',    'Geopotential Height','km';...
-    'PRES',    'Atmospheric Pressure','hPa';...
-    'TEMP',    'Temperature','K';...
-    'RELH',    'Relative Humidity','%';...
-    'MIXR',    'Mixing Ratio', 'g/kg';...
-    'CLOUD',   'Cloud Water Content','g/m^3';...
-    'RAIN',    'Rain Water Content','g/m^3';...
-    'IWC',     'Ice Content','g/m^3';...
-    'SNOW',    'Snow Content','g/m^3';...
-    'GRAUPEL', 'Graupel Content','g/m^3';...
-    'DRCT',    'Wind Direction','deg';...
-    'SKNT',    'Wind Speed','knot'...
-    };
+  % Radiosonde variables to load:
+  nc_metadata = {
+								 'HGHT',    'Geopotential Height','km';...
+								 'PRES',    'Atmospheric Pressure','hPa';...
+								 'TEMP',    'Temperature','K';...
+								 'RELH',    'Relative Humidity','%';...
+								 'MIXR',    'Mixing Ratio', 'g/kg';...
+								 'CLOUD',   'Cloud Water Content','g/m^3';...
+								 'RAIN',    'Rain Water Content','g/m^3';...
+								 'IWC',     'Ice Content','g/m^3';...
+								 'SNOW',    'Snow Content','g/m^3';...
+								 'GRAUPEL', 'Graupel Content','g/m^3';...
+								 'DRCT',    'Wind Direction','deg';...
+								 'SKNT',    'Wind Speed','knot'...
+  };
 
-    % quality factor of the profiles to storage in mat-file
-    QC = [];
+  % quality factor of the profiles to storage in mat-file
+  QC = [];
     
-    % weather flag of the profiles: 1=clear sky, 2=cloudy, 3=rainy
-    WC = [];
+  % weather flag of the profiles: 1=clear sky, 2=cloudy, 3=rainy
+  WC = [];
     
-    % Indexing for NetCDF files:
-    % * this is index for different stations
-    n_x = 0;
-    % * this index is for different years
-    n_y = 0;
-             
-    y = 0;
+  % Indexing for NetCDF files:
+  % * this is index for different stations
+  n_x = 0;
+  % * this index is for different years
+  n_y = 0;
+  
+  y = 0;
 
     %************************************************************
     %% The cell string 'STATIONS' must be organized according to
@@ -304,15 +307,15 @@ function [] = RS_homogenize_profiles(varargin)
                     % Homogenazing the layes for all profiles:
                     for i = 1:nobs,
                       idxobs = idxobs + 1;
-                           % 15 corresponds to all Quality test passed
-                           %continue; Including even bad profiles!
+                      % 15 corresponds to all Quality test passed
+                      %continue; Including even bad profiles!
                       if QCflag(i) ~= 15,
                         QC(n_x,n_y,idxobs) = QCflag(i);
                       else
                         QC(n_x,n_y,idxobs) = QCflag(i);
                       end
                                 
-                   % Extracting the date for the specific Observation:
+											% Extracting the date for the specific Observation:
                       yy = fix(metvar.OBST(i)/1e4);
                       month = fix(metvar.OBST(i)/1e2) - yy*1e2;
                       day   = fix(metvar.OBST(i)) - yy*1e4 - month*1e2;
@@ -358,8 +361,9 @@ function [] = RS_homogenize_profiles(varargin)
                       
                       h_tmp = data(i).HGHT(tmp);
                       Nh_tmp = length(h_tmp);
-                      hi = structfun(@(x) h_tmp(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
-                      vi = structfun(@(x) x(tmp(~isnan(x(tmp)))),data(i),'UniformOutput',0);
+
+                      hi = structfun(@(x) h_tmp( ~isnan(x(tmp))), data(i), 'UniformOutput', 0);
+                      vi = structfun(@(x) x( ~isnan(x(tmp))), data(i), 'UniformOutput', 0);
                       tt = structfun(@(l) length(l), vi);
                       names = fieldnames(vi);
                       for k=1:length(names),
@@ -372,8 +376,9 @@ function [] = RS_homogenize_profiles(varargin)
                           Xin = [0; Xin];
                           Yin = [SURFVars(idxobs,3); Yin];
                         end
-                        if tt(k)>fix(Nh_tmp/2),
-                          Vinter = interp1(Xin,Yin,H0,'linear','extrap');
+												
+                        if tt(k)>fix(Nh_tmp/2) && Nh_tmp>2,
+													Vinter = interp1(Xin, Yin, H0, 'linear', 'extrap');
                         else
                           Vinter = NaN*ones(nlay,1);
                           for badin=1:tt(k),
