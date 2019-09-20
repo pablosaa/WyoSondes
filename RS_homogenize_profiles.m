@@ -357,14 +357,14 @@ function [] = RS_homogenize_profiles(varargin)
                       end
 
 											% Interpolating the profile variables to fixed layers below topH:
-                      tmp = Iunq(find(Zunq <= topH)); %find(data(i).HGHT<=topH);
+                      INidx = Iunq(find(Zunq <= topH)); %find(data(i).HGHT<=topH);
                       
-                      h_tmp = data(i).HGHT(tmp);
+                      h_tmp = data(i).HGHT(INidx);
                       Nh_tmp = length(h_tmp);
 
-                      hi = structfun(@(x) h_tmp( ~isnan(x(tmp))), data(i), 'UniformOutput', 0);
-                      vi = structfun(@(x) x( ~isnan(x(tmp))), data(i), 'UniformOutput', 0);
-                      tt = structfun(@(l) length(l), vi);
+                      hi = structfun(@(x) h_tmp( ~isnan(x(INidx))), data(i), 'UniformOutput', 0);
+                      vi = structfun(@(x) x(INidx( ~isnan(x(INidx)) )), data(i), 'UniformOutput', 0);
+                      tt = structfun(@(x) length(x), vi);
                       names = fieldnames(vi);
                       for k=1:length(names),
                         Xin = getfield(hi,names{k});
@@ -377,7 +377,7 @@ function [] = RS_homogenize_profiles(varargin)
                           Yin = [SURFVars(idxobs,3); Yin];
                         end
 												
-                        if tt(k)>fix(Nh_tmp/2) && Nh_tmp>2,
+                        if tt(k)>fix(Nh_tmp/2) && Nh_tmp>10,
 													Vinter = interp1(Xin, Yin, H0, 'linear', 'extrap');
                         else
                           Vinter = NaN*ones(nlay,1);

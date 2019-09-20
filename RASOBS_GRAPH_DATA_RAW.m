@@ -11,9 +11,6 @@ function [varargout] = RASOBS_GRAPH_DATA_RAW(varargin)
 % Email: pablo.saa@uib.no
 % See: LICENSE
 % ---------------------------------------------------------------
-% TODO:
-% * QI include control flag 
-% * add button to run RS_homogenize
 % ---------------------------------------------------------------    
 if nargin==0,
     % open file browser to load .mat file

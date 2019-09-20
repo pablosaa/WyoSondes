@@ -172,12 +172,12 @@ By using the pop-up menus it is possible to select other variables to show, and 
 The profile is shown in color black for the selected time and for reference it also includes 2 profiles before and 2 after which are indicated on the legend by T0-2, T0-1, etc. where T0 is the date and time indicated at the top, e.g. _16.5.2015 T0=00Z_ in the figure above.
 
 ### For NetCDF files
-When the Radiosonde data has been storaged as NetCDF file, it can be easily visualized by any third-party software, for a quick peak `ncview` can be used
+When the Radiosonde data has been stored as netCDF file, it can easily be visualized by any third-party software, for a quick peak `ncview` can be used
 ```
 /home/user:~/wyorasobs/data/2015> ncview RS_Y2015-2015_M05-07_D01-31_H00-12.nc &
 ```
 and by selecting any profile variable a 2D time series can be easily plotted, for instance for the temperature variable `TEMP`
-![](images/Screenshot%20from%202018-08-09%2013-56-08.png)
+![](images/Screenshot-2018-08-09_13-56-08.png)
 
 ### For CSV Files
 The visualization for the .csv files is not supported.
