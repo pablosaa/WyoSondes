@@ -322,9 +322,14 @@ function [] = RS_homogenize_profiles(varargin)
                       hour = 24*(metvar.OBST(i)-fix(metvar.OBST(i)));
                       ndate(idxobs,:) = [2000+yy, month, day, hour];
 
+											% ----
+											% CONVERTION OF VARIABLES FOR BETTER TREATMENT
                       % Converting Temperature units from C to Kelvin:
                       data(i).TEMP = data(i).TEMP+273.15;
-
+											% Converting wind speed and direction to vector:
+											data(i).WVECX = data(i).SKNT.*cosd(data(i).DRCT);
+											data(i).WVECY = data(i).SKNT.*sind(data(i).DRCT);
+											
 											% getting the Surface Data (extrapolating to Height 0):
                       [Zunq, Iunq] = unique(data(i).HGHT);
                       for k=1:length(surface_names),
@@ -357,43 +362,71 @@ function [] = RS_homogenize_profiles(varargin)
                       end
 
 											% Interpolating the profile variables to fixed layers below topH:
-                      INidx = Iunq(find(Zunq <= topH)); %find(data(i).HGHT<=topH);
+                      INidx = Iunq(find(Zunq <= topH)); % indices for unique H below topH
                       
                       h_tmp = data(i).HGHT(INidx);
                       Nh_tmp = length(h_tmp);
 
+											% getting the Inter-quantile-region for profile variables:
+											IQRvar = structfun(@(x) quantile(x(INidx), [.25 .75]), data(i), 'UniformOutput', 0);
+											% getting the limits inside non-outliers values:
+											OUTlie = structfun(@(x) [x(1) x(2)]+[-1 1]*1.3*diff(x), IQRvar, 'UniformOutput', 0);
+
+											% getting the altitues and profiles only without NaNs:
                       hi = structfun(@(x) h_tmp( ~isnan(x(INidx))), data(i), 'UniformOutput', 0);
                       vi = structfun(@(x) x(INidx( ~isnan(x(INidx)) )), data(i), 'UniformOutput', 0);
                       tt = structfun(@(x) length(x), vi);
                       names = fieldnames(vi);
                       for k=1:length(names),
-                        Xin = getfield(hi,names{k});
-                        Yin = getfield(vi,names{k});
-                         % For Relative Humidity variable, the surface
-                         % values is included for the interpolation
-                         % to avoid high values or negarive values:
+												% ---
+												% Before interpolation, take out possible profile outlayers 
+                        Xin = getfield(hi, names{k});
+                        Yin = getfield(vi, names{k});
+												YLIM = getfield(OUTlie, names{k});
+												noliers = find(Yin>YLIM(1) & Yin<YLIM(2));
+												Xin = Xin(noliers);
+												Yin = Yin(noliers);
+												NYin = length(Yin);
+                        % For Relative Humidity variable, the surface
+                        % values is included for the interpolation
+                        % to avoid high values or negarive values:
                         if strcmp(names{k},'RELH'),
                           Xin = [0; Xin];
                           Yin = [SURFVars(idxobs,3); Yin];
                         end
+
 												
-                        if tt(k)>fix(Nh_tmp/2) && Nh_tmp>10,
+                        if NYin>fix(Nh_tmp/2) && Nh_tmp>10,
 													Vinter = interp1(Xin, Yin, H0, 'linear', 'extrap');
                         else
                           Vinter = NaN*ones(nlay,1);
-                          for badin=1:tt(k),
+                          for badin=1:NYin,
                             [dummy, Idxin] = min(abs(Xin(badin)-H0));
                             Vinter(Idxin) = Yin(badin);
                           end
                         end
-                        eval(['TEMPVars.' names{k} '=Vinter;']);
+
+												% checking for outliers after inter-/ extra-polation again:
+												noliers = find(Vinter>YLIM(1) & Vinter<YLIM(2));
+												liers = find(Vinter<=YLIM(1) | Vinter>=YLIM(2));
+												if ~isempty(liers),
+													% correcting the outliers:
+													Xin = H0(noliers);
+													Yin = Vinter(noliers);
+													Vinter(liers) = interp1(Xin, Yin, H0(liers),'nearest');
+												end
+                        eval(['TEMPVars.' names{k} ' = Vinter;']);
                        
                       end
 
 											% Converting the Height units from m to km and from
 											% station level to a.s.l.:
-                      TEMPVars.HGHT = (TEMPVars.HGHT)/1e3;  %+metvar.SELV(i)
-		      
+                      TEMPVars.HGHT = (TEMPVars.HGHT)/1e3;
+
+											% Converting and replacing the Wind Vector back to Wind Speed and Wind Direction
+											TEMPVars.SKNT = sqrt( TEMPVars.WVECX.^2 + TEMPVars.WVECY.^2 );
+											TEMPVars.DRCT = mod( 360 + atan2d(TEMPVars.WVECY, TEMPVars.WVECX), 360);
+											
 											% **********************************************
                       [TEMPVars.CLOUD, TEMPVars.RAIN, TEMPVars.IWC,...
                        TEMPVars.SNOW, TEMPVars.GRAUPEL] = cloud_modell(TEMPVars.TEMP,...
@@ -447,8 +480,6 @@ function [] = RS_homogenize_profiles(varargin)
 											% end over i: number of observations per File 
 										end
 										% ------------------------------------------------------------
-										size(QCflag)
-										size(WCflag)
 		    
                     if TXTF,
 											% Writing the first line in ASCII file
