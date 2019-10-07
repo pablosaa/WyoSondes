@@ -13,19 +13,26 @@
 % USAGE:
 % > status = RS_homogenize_profiles(mat-file);
 % > status = RS_homogenize_profiles('station',{'home','work'},'years',[1990:1999],...);
-% WHERE:
-% *
-% *
-% Optional input arguments:
-% * H: Array with levels height [Km] where to homoginize,
-% * OUTPUT: string with the path where to store the file,
 %
-% SimTag = '_02COTUR';  % simulation tag (short char) 'fino1';
-% years  = [2014:2018];
-% INPATH = '~/GFI/data/RASOBS/';
-% STATIONS = {'enzv'};  or {'polargmo';'enas';'enbj';'enan'}; or %{'norderney'};
-% The Radiosonde MAT files will be searched at the following path:
-% OUTPUTPATH/station/years/*.mat
+% WHERE the input arguments are given in pair as...
+% ... mandatory input arguments:
+% * 'station' = {'enzv'};  or {'polargmo';'enas';'enbj';'enan'}; or %{'norderney'};
+% * 'years'   = [2014:2018]; % range of years for data to use;
+%
+% ... optional input arguments:
+% * H: Array with height levels [Km] to use for homoginization,
+% * OUTPATH: string with the path where to store the file,
+% * SimTag = '_02COTUR';  % simulation tag (short char) 'fino1';
+% * BASEPATH = '/home/username/data/RASOBS';  % the base folder there the RS data should be stores by stations;
+% 
+% The default values for the optional input pair arguments:
+% * H = [10, 20, 30... 10000];
+% * OUTPATH = '~/GFI/data/RT';
+% * SimTag = '';
+% * BASEPATH = '~/GFI/data/RASOBS'
+%
+% Given the above input arguments, the radiosonde MAT files will be searched at the following path:
+% BASEPATH/[station]/[years]/*.mat
 % 
 % (c) 2018 Pablo Saavedra Garfias, Geophysical Institute, University of Bergen
 % See LICENSE
