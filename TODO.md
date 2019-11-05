@@ -12,7 +12,7 @@
 - add buttom to run RS_homogenize_profiles.m,
 - depending on number of profiles adjust the datetick horizontal axis e.g. HH/dd, dd/mm or mm/yyyy
 
-## RS_homogenize_prifiles.m
+## RS_homogenize_profiles.m
 - quality check for profiles that might be extrapolated to extreme values,
 - adapt the variable names to match with the WRF standards.
 
