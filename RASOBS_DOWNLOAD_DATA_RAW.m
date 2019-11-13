@@ -1,6 +1,15 @@
-% [data, metinfo, metadata] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour, [OPTIONALS]);
 % This function gets the 'DATA_raw' of the soundings (raob) from the
 % Wyoming University internet site (http://weather.uwyo.edu);
+%
+% USAGE:
+% To download the latest radiosonde of the current date from given "station" name:
+% > [data, metinfo, metadata] = RASOBS_DOWNLOAD_DATA_RAW(station);
+%
+% To download a range of year, month, day or hour from given "station" name:
+% > [data, metinfo, metadata] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour);
+%
+% Including optional arguments:
+% > [data, metinfo, metadata] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour, [OPTIONALS]);
 %
 % INPUT
 % station-> (string) Code for the station to download;
@@ -48,7 +57,7 @@
 % See: LICENSE
 % ---------------------------------------------------------------
 
-function varargout = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour, varargin);
+function varargout = RASOBS_DOWNLOAD_DATA_RAW(station, varargin); %year,month,day,hour, varargin);
 
 
 %% CHECKING INPUT VARIABLES
@@ -64,32 +73,45 @@ if nargout>4,
 end
 
 if ismember(nargin,[5,7,9,11,13]),
-    % only two additional options are available
-    for i=1:2:length(varargin),
-        switch (lower(varargin{i})),
-          case {'outputpath'},
-            if ischar(varargin{i+1}),
-                PATH_DAT = sprintf('%s',varargin{i+1});
-            else
-                warning('Path needs to be a string!');
-            end
-          case {'netcdf'},
-            ncdfflag = logical(varargin{i+1});
-          case {'csvfile'},
-            csvflag = logical(varargin{i+1});
-          case {'matfile'},
-            matflag = logical(varargin{i+1});
-          case {'waiting'},
-            TAKE_A_BREAK = min(20,max(3,varargin{i+1}));
-            if isempty(TAKE_A_BREAK),
-                error(['waiting needs to be a number!']);
-            end
-          otherwise,
-            error(['Argument name "' varargin{i} '" not available!']);
+	% Checking the 2nd, 3th, 4th and 5th arguments as numeric for YEAR, MONTH, DAY, HOURS
+	if all( cellfun(@isnumeric , varargin(1:4))),
+		[year, month, day, hour] = deal(varargin{1:4});
+	else
+		error('The 2nd, 3th, 4th and 5th arguments need to be numeric for YEAR, MONTH, DAY, HOURS. See Help!');
+	end
+  % Checking for optional inputs (after 5th input argument, they must be pairs)
+  for i=5:2:length(varargin),
+    switch (lower(varargin{i})),
+      case {'outputpath'},
+        if ischar(varargin{i+1}),
+          PATH_DAT = sprintf('%s',varargin{i+1});
+        else
+          warning('Path needs to be a string!');
         end
+      case {'netcdf'},
+        ncdfflag = logical(varargin{i+1});
+      case {'csvfile'},
+        csvflag = logical(varargin{i+1});
+      case {'matfile'},
+        matflag = logical(varargin{i+1});
+      case {'waiting'},
+        TAKE_A_BREAK = min(20,max(3,varargin{i+1}));
+        if isempty(TAKE_A_BREAK),
+          error(['waiting needs to be a number!']);
+        end
+      otherwise,
+        error(['Argument name "' varargin{i} '" not available!']);
     end
+  end
+elseif nargin==1,
+	lastprof = datetime('now','TimeZone','UTC');
+	year = lastprof.Year;
+	month = lastprof.Month;
+	day = lastprof.Day;
+	hour = floor(lastprof.Hour/12)*12;  % either 00 or 12 (hours where RS normaly are available)
+	disp(['downloading for "' station '" last at ' num2str([year month day hour])]);
 else
-    error('Number of input arguments wrong! See help.');
+  error('Number of input arguments wrong! See help.');
 end
 
 
@@ -212,7 +234,7 @@ for YEAR=year;
                 glovalues = globaltmp{2};
 		
                 % Changing Date format from "YYMMDD/hhmm"->"YYMMDD.hhmm"
-		idxtmp = find(strcmp(description,'Observation time'));
+								idxtmp = find(strcmp(description,'Observation time'));
                 tmp = sscanf(strrep(glovalues{idxtmp},'/','.'),'%06d.%02d%02d');
                 tmp = tmp(1)+[1/24 1/3600]*tmp(2:3);
 
@@ -229,19 +251,24 @@ for YEAR=year;
                             [1:length(NameIndices)],'UniformOutput',false);                      
                 cellfun(@eval, qq);
 
-                if isempty(PATH_DAT),
-                    PATH_DAT = ['../../data/RASOBS/'...
-                                lower(stationname) '/' ...
-                                yyyy '/'];
-                end
-                if exist(PATH_DAT,'dir');
-                else mkdir(PATH_DAT);
-                end;
+								if ~matflag & ~csvflag & ~ncdfflag,
+									continue;
+								end
 
-                file_name = [PATH_DAT 'RS_'...
-                             sprintf('Y%04d-%04d_M%02d-%02d_D%02d-%02d_H%02d-%02d',...
-                                     year([1,end]),month([1,end]),...
-                                     day([1,end]),hour([1,end]))];
+								% Creating PATH_DAT and filename_base to storage data:
+								if isempty(PATH_DAT),
+                  PATH_DAT = ['../../data/RASOBS/'...
+																lower(stationname) '/' ...
+																yyyy '/'];
+								end
+								if exist(PATH_DAT,'dir');
+								else mkdir(PATH_DAT);
+								end;
+
+								file_name = [PATH_DAT 'RS_'...
+																			sprintf('Y%04d-%04d_M%02d-%02d_D%02d-%02d_H%02d-%02d',...
+																							year([1,end]),month([1,end]),...
+																							day([1,end]),hour([1,end]))];
 
                 %% SAVE DATA as MAT-file
                 if matflag && ~exist([file_name '.mat'],'file'),
