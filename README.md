@@ -10,9 +10,19 @@ This repository has been mainly developed and intensily used with GNU/Octave v4.
 This GNU Octave/MATLAB function gets the DATA of the soundings (raob) from the Wyoming University internet site (http://weather.uwyo.edu)
 
 The Function can be used by calling one or any combinations of the following set of parameters:
+
+To download the latest radiosonde data given a specific station name:
+```
+>> [data, metvar, {metadata}] = RASOBS_DOWNLOAD_DATA_RAW(station);
+```
+
+or to specify a range of dates given by years, months, days and hours:
 ```
 >> [data, metvar, {metadata}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour);
-  
+```
+
+The following optional arguments are possible:
+```
 >> [data, metvar, {metadata}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour,'outputpath','/whereto/storage/data/');
   
 >> [data, metvar, {metadata}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour,'netcdf',true);
