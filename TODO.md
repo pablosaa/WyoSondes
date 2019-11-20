@@ -1,8 +1,8 @@
 # To Do List
 
 ## RASOBS_DOWNLOAD_DATA_RAW.m
-- be able to download the most recent RS for a given station,
-- add storage option as 'html' with the ASCII text as shown in website,
+- include option to download from NOAA data archive?
+- add storage option as FSL ASCII format or html as shown in website,
 
 ## RASOBS_GRAPH_DATA_RAW.m
 - QI include a indicator flag,
