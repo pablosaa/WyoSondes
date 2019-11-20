@@ -193,10 +193,15 @@ and by selecting any profile variable a 2D time series can be easily plotted, fo
 The visualization for the .csv files is not supported.
 
 
-## NOTE: IGRA Weather Balloon
+## NOTE: Other Sources of Radiosonde data
+#### * NOAA ESRL Radiosonde Database
+NOAA's Radiosonde data archive including a good web based GUI to download a series of profiles with four differnet file formats, namely FSL ascii, original FSL ascii, FAA604 WMO/GTS ascii and netCDF format.
+General information and link to data archive is ![here](https://ruc.noaa.gov/raobs/General_Information.html)
+
+#### * IGRA Weather Balloon
 Alternative Radiosonde data can be found at the ![Integrated Global Radiosonde Archive (IDRA)](https://www.ncdc.noaa.gov/data-access/weather-balloon/integrated-global-radiosonde-archive), with most of the stations also covered by Wyoming University there are others which are additionally available at IDRA data bank. The IDRA data files, however, can be accessed directly from their FTP server as compressed files for the entire period of availability. Therefore a tool like WyoSonde is not needed. 
 
 ---
-(c) 2018 P. Saavedra Garfias,<br> Geophysical Institute,<br> UNIVERSITY OF BERGEN
+(c) 2018 Pablo Saavedra G.,<br> Geophysical Institute,<br> UNIVERSITY OF BERGEN
 
 See LICENSE
