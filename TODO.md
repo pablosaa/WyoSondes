@@ -14,6 +14,7 @@
 
 ## RS_homogenize_profiles.m
 - quality check for profiles that might be extrapolated to extreme values,
+- mapping HGHT to geometrical height before interpolation.
 - adapt the variable names to match with the WRF standards.
 
 ## WyoRS_mat2netcdf.m
