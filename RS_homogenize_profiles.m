@@ -124,18 +124,19 @@ function [] = RS_homogenize_profiles(varargin)
   end
 
   %% Parameter definitions:
-  topH = 10100;   % top profile height [m]
+  topH = 10001;   % top profile height [m]
   MinLev = 40;   % minimum continues layers the RadioSonde must have
 	
   % Default layer altitudes (if not specified as input)
-  H0 = [[10:20:1500],...
-        [1550:50:3000],...
-        [3200:200:topH]];    % layer to homoginize [m]
+	
+  %H0 = [[10:20:1500],...
+  %      [1550:50:3000],...
+  %      [3200:200:topH]];    % layer to homoginize [m]
 
   NH = 145;
-  H0 = 10*unique(floor(logspace(1,4,NH)/10));
-  tmp = smooth(diff(H0));
-  H0 = cumsum(tmp);   % standard Atmosphere altitude [m]
+  H_0 = 10*unique(floor(logspace(1,4,NH)/10));
+  tmp = smooth(diff(H_0));
+  H_0 = cumsum(tmp);   % standard Atmosphere altitude [m]
 
   %% Definition of Pressure layers where to homogenize RS profiles
   P0 = 1013; % Surface Reference Pressure [hPa]
@@ -144,11 +145,10 @@ function [] = RS_homogenize_profiles(varargin)
   R = 8.31446; % Molar gas constant [J/mol/K]
   T0 = 290;   % Initial Ambient Temperature  [K]
   % Lr = 6.5;   % Temperature lapse-rate [K/km]
-  %Pa = [[P0:-1.6:710],[680:-30:560],[510:-50:300]];
-  Pa = P0*exp(-M*g/R/T0*H0*1e-3);
+  %Pa = P0*exp(-M*g/R/T0*H0*1e-3);
   %
 
-  nlay = length(H0); % Number of layers for the homogenized layers
+  nlay = length(H_0); % Number of layers for the homogenized layers
 
   %% Definition of Variable names and attributes for NetCDF file:
   % Variables needs to be included in the ASCII file
@@ -240,7 +240,7 @@ function [] = RS_homogenize_profiles(varargin)
                 A = dir(fullfile(INPATH, 'RS_*.mat'));
                 N_f = length(A);
 		
-				% number of files in directory:
+								% number of files in directory:
                 for f = 1:N_f,
                     filen = fullfile(INPATH, A(f).name);
                     
@@ -336,6 +336,10 @@ function [] = RS_homogenize_profiles(varargin)
 											% Converting wind speed and direction to vector:
 											data(i).WVECX = data(i).SKNT.*cosd(data(i).DRCT);
 											data(i).WVECY = data(i).SKNT.*sind(data(i).DRCT);
+
+											% ----
+											% Calculating Geopotential Height for interpolation:
+											H0 = Z2PHB(H_0, metvar.SLAT(i), metvar.SLON(i), metvar.SELV(i));
 											
 											% getting the Surface Data (extrapolating to Height 0):
                       [Zunq, Iunq] = unique(data(i).HGHT);
@@ -428,7 +432,7 @@ function [] = RS_homogenize_profiles(varargin)
 
 											% Converting the Height units from m to km and from
 											% station level to a.s.l.:
-                      TEMPVars.HGHT = (TEMPVars.HGHT)/1e3;
+                      TEMPVars.HGHT = H_0*1e-3;  %(TEMPVars.HGHT)/1e3;
 
 											% Converting and replacing the Wind Vector back to Wind Speed and Wind Direction
 											TEMPVars.SKNT = sqrt( TEMPVars.WVECX.^2 + TEMPVars.WVECY.^2 );
