@@ -82,18 +82,19 @@ yvar = getfield(metvar, metadata.RSINDICES{tsvar,1});
 figure;
 set(gcf,'Position',[20 5 1000 950],'PaperPositionMode','auto');
 clf;
+
 %% Sub-plot 1 for the individual profiles
 ha.ax(1) = subplot(6,4,[1,2,5,6,9,10]);
 hold on;
 ha.hh = arrayfun(@(i){plot(data(i).TEMP,1e-3*data(i).HGHT,...
-                              'DisplayName',sprintf('T0 %+2d',i-isonde),...
-                              'LineWidth',2,'Tag','TEMP',...
-                              'Color',colorlin(i-rspan(1)+1,:));...
-                  },...
+                           'DisplayName',sprintf('T0 %+2d',i-isonde),...
+                           'LineWidth',2,'Tag','TEMP',...
+                           'Color',colorlin(i-rspan(1)+1,:));...
+                   },...
                  rspan,...
                  'UniformOutput',true);
 
-maxz=1e-3*max(arrayfun(@(i) max([data(i).HGHT]),rspan));
+maxz = 1e-3*max(arrayfun(@(i) max([data(i).HGHT]),rspan));
 set(ha.hh{span+1},'LineWidth',3);  % {isonde-span}
 xlabel(sprintf('%s [%s]',metadata.PROFILE{idxvar,2:3}),'FontSize',FoSi);
 ylabel(sprintf('%s [K%s]',metadata.PROFILE{2,2:3}),'FontSize',FoSi);
@@ -103,9 +104,9 @@ i(span+1) = '';
 i = [span+1, i];   % putting the middle line to the top
 
 if exist('OCTAVE_VERSION','builtin'),
-  objarray = cell2mat(ha.hh(i));
+    objarray = cell2mat(ha.hh(i));
 else
-  objarray = [ha.hh{i}]';
+    objarray = [ha.hh{i}]';
 end
 
 set(ha.ax(1),'YLim',[-.05 maxz],'Box','on','YGrid','on',...
@@ -114,12 +115,12 @@ set(ha.ax(1),'YLim',[-.05 maxz],'Box','on','YGrid','on',...
 legend('show','location','southwest');
 set(findobj('Tag','legend'),'FontSize',FoSi,'Color','none');
 
-%% Adding extra Axis for Hodogram
+%% Sub-plot 4 for the Hodogram
 ha.ax(4) = subplot(6,4,[7,8,11,12]); %axis('Position',[0.35 0.7 0.2 0.2]);
 ha.hodog = Wind_hodograph(data(i(1+span)).SKNT,...
                           data(i(1+span)).DRCT,...
                           data(i(1+span)).HGHT,...
-                          'heights',0,'axes',ha.ax(4));
+                          'heights', 0, 'axes', ha.ax(4));
 
 %% Sub-plot 2 is for the 2D time series o RS profiles, default TEMP
 ha.ax(2) = subplot(6,4,[13:20]); %4:5]);

@@ -11,6 +11,7 @@ function PHB = Z2PHB(Z, lat, lon, alt)
 	% * PHB: Geopotential altitude [m]
 	%
 	% (c) 2018, Pablo Saavedra G.
+	% pablo.saa@uib.no
 	% Geophysical Institude, University of Bergen
 	% See LICENSE
 	% -----------------------------------------------------------------------------

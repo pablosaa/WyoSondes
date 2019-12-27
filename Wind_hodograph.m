@@ -35,7 +35,8 @@ function varargout = Wind_hodograph(WS, WD, H, varargin)
     if nargin<3,
         error('Three input arguments needed!');
     end
-% define default parameters:
+    
+    % define default parameters:
     HFLAG = true;
     CFLAG = true;
     VFLAG = true;
@@ -70,41 +71,40 @@ function varargout = Wind_hodograph(WS, WD, H, varargin)
     end
     
 
-% definition of default units
-ws_unit = 'm/s';
-wh_unit = 'km';
+    % definition of default units
+    ws_unit = 'm/s';
+    wh_unit = 'km';
 
-% definition of labels
-rosetext = {'N','NE','E','SE','S','SW','W','NW'};
+    % definition of labels
+    rosetext = {'N','NE','E','SE','S','SW','W','NW'};
 
-%load('../../data/RASOBS/enzv/2008/RS_Y2008-2008_M01-12_D01-31_H00-18.mat');
+    Htop = 15.1;
+    H  = 1e-3*(H); %data(i).HGHT);
+                   
+    % considering by default 10km
+    imax = find(H<Htop);
 
-Htop = 15.1;
-H  = 1e-3*(H); %data(i).HGHT);
-% considering by default 10km
-imax = find(H<Htop);
+    WS = 0.51444*WS(imax); %data(i).SKNT(imax);
+    WD = deg2rad(WD(imax)); %data(i).DRCT(imax));
+    H = H(imax);
 
-WS = 0.51444*WS(imax); %data(i).SKNT(imax);
-WD = deg2rad(WD(imax)); %data(i).DRCT(imax));
-H = H(imax);
+    % converting to vector components:
+    Vy = WS.*cos(WD);
+    Ux = WS.*sin(WD);
 
-% converting to vector components:
-Vy = WS.*cos(WD);
-Ux = WS.*sin(WD);
+    U0 = zeros(size(Ux));
+    V0 = zeros(size(Vy));
 
-U0 = zeros(size(Ux));
-V0 = zeros(size(Vy));
+    Rmax = max(WS, 40);
 
-Rmax = max(WS);
+    R = [0:5:10*floor(Rmax/10)];
 
-R = [0:5:10*floor(Rmax/10)];
-
-if length(R)>6,
-    R = R(1:2:end);
-end
-A = linspace(0,2*pi,360);
-yy = cos(A')*R;
-xx = sin(A')*R;
+    if length(R)>6,
+        R = R(1:2:end);
+    end
+    A = linspace(0,2*pi,360);
+    yy = cos(A')*R;
+    xx = sin(A')*R;
 
 % Drawing in canvas
 if exist('hodog','var'),
@@ -112,6 +112,8 @@ if exist('hodog','var'),
     hodog.VFLAG = VFLAG;
     hodog.CFLAG = CFLAG;
     hodog.HFLAG = HFLAG;
+    
+    % resampling the new data into existing axis:
     resampling_hodograph(Ux, Vy, H, hodog);
     return;
 else
@@ -125,7 +127,7 @@ TextColor = [.3 .3 .3];
 TextSize = 12;
 
 % creating concentric grid circles:
-ch = plot(xx,yy,'LineStyle',GridLine,'Color',GridColor);
+ch = plot(xx, yy, 'LineStyle', GridLine, 'Color', GridColor);
 axis equal;
 hold on;
 [NN, iamin] = min(hist(WD, [0, pi/4, pi/2, 3/4*pi, pi,...
@@ -141,10 +143,10 @@ txtlabel = ceil(rad2deg(A(iradial)));
 Alabel = text(1.1*xx(iradial,end),1.1*yy(iradial,end),rosetext,...
               'FontSize',TextSize,'Color',TextColor);
 % Radial labels:
-Rlabel = text(1.01*xx(iradial(iamin),[1:end-1]),...
-              1.1*yy(iradial(iamin),[1:end-1]),...
+Rlabel = text(1.01*xx(iradial(iamin), [1:end-1]),...
+              1.1*yy(iradial(iamin), [1:end-1]),...
               num2cell(R(1:end-1)),...
-              'FontSize',TextSize,'Color',TextColor);
+              'FontSize', TextSize, 'Color', TextColor);
 
 set(ax, 'Color','none','Box','off','FontSize',13,...
         'XColor','none','YColor','none',...
@@ -156,8 +158,8 @@ vh = quiver(U0, V0, Ux, Vy, 0, '-','Color',[.7 .7 1]);
 set(vh, 'Visible',VFLAG);
 
 % showing alitude color-code line
-sh = surface([Ux Ux],[Vy Vy],[U0 V0],[H H],...
-             'LineWidth',2,'EdgeColor','interp');
+sh = surface([Ux Ux], [Vy Vy], [U0 V0], [H H],...
+             'LineWidth', 2, 'EdgeColor', 'interp');
 
 caxis([0 min(Htop,max(H))]);
 if CFLAG,
@@ -166,8 +168,8 @@ else
     cmap = [0 0 0];
 end
 colormap(ax, cmap);
-hbar = colorbar('westoutside'); 
-set(hbar,'Position',get(hbar,'Position').*[1 1.1 .5 .8],...
+hbar = colorbar('eastoutside'); 
+set(hbar,'Position',get(hbar,'Position').*[1.1 1.1 .5 .8],...
          'FontSize',TextSize,'Visible',CFLAG);
 title(hbar,'km','FontSize',TextSize,'Visible',CFLAG);
 
@@ -228,12 +230,32 @@ function resampling_hodograph(Ux, Vy, H, h),
     
     % Updating the Altitude labels along the line
     [tmp idxh] = arrayfun(@(x) min(abs(x-H)), linspace(.2,max(H),10));
-    Hlabel= cellfun(@(x) sprintf('%2.1f',x),num2cell(H(idxh)),'UniformOutput',0);
+    Hlabel= cellfun(@(x) sprintf('%2.1f',x), num2cell(H(idxh)), ...
+                    'UniformOutput', 0);
         
-    arrayfun(@(i) set(h.Hdata(i),'String',Hlabel{i},...
-                                 'Visible', h.HFLAG,...
-                                 'Position',[Ux(idxh(i)) Vy(idxh(i))]),[1:10])
+    arrayfun(@(i) set(h.Hdata(i), 'String', Hlabel{i},...
+                                  'Visible', h.HFLAG,...
+                                  'Position',[Ux(idxh(i)) Vy(idxh(i))]),[1:10])
 
+    % Updating the axis' limits:
+    ii = isfinite(Ux) & isfinite(Vy);
+    AXmax = max(max(abs(Ux(ii))), max(abs(Vy(ii))) );
+    [xx, yy] = get_circles(AXmax);
+    for i=1:size(xx,2), set(h.ch(i), 'XData', xx(:,i), 'YData', yy(:,i)); end
+    set(h.ax, 'XLim', AXmax*[-1 1], 'YLim',AXmax*[-1 1]);
+    
 end
 
+function [xx, yy] = get_circles(WS)
+    Rmax = max(WS);
+
+    R = [0:5:10*floor(Rmax/10)];
+
+    if length(R)>6,
+        R = R(1:2:end);
+    end
+    A = linspace(0,2*pi,360);
+    yy = cos(A')*R;
+    xx = sin(A')*R; 
+end
 % end of function
