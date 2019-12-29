@@ -37,6 +37,7 @@ function varargout = Wind_hodograph(WS, WD, H, varargin)
     end
     
     % define default parameters:
+    ff = @(x) x; %char(real(x)*'on ' + real(~x)*'off');
     HFLAG = true;
     CFLAG = true;
     VFLAG = true;
@@ -137,11 +138,13 @@ hold on;
 iradial = [1, 45, 90, 135, 180, 225, 270, 315];
 
 % creating radial grid lines:
-rh = plot(xx(iradial,:)', yy(iradial,:)','LineStyle',GridLine,'Color',GridColor);
+rh = plot(xx(iradial,:)', yy(iradial,:)', 'LineStyle', GridLine, 'Color', GridColor);
 txtlabel = ceil(rad2deg(A(iradial)));
+
 % Angular labels:
-Alabel = text(1.1*xx(iradial,end),1.1*yy(iradial,end),rosetext,...
-              'FontSize',TextSize,'Color',TextColor);
+Alabel = text(1.1*xx(iradial,end), 1.1*yy(iradial,end), rosetext,...
+              'FontSize', TextSize, 'Color', TextColor);
+
 % Radial labels:
 Rlabel = text(1.01*xx(iradial(iamin), [1:end-1]),...
               1.1*yy(iradial(iamin), [1:end-1]),...
@@ -149,13 +152,13 @@ Rlabel = text(1.01*xx(iradial(iamin), [1:end-1]),...
               'FontSize', TextSize, 'Color', TextColor);
 
 set(ax, 'Color','none','Box','off','FontSize',13,...
-        'XColor','none','YColor','none',...
+        'Visible','off',... % 'XColor','none','YColor','none',...
         'XLimMode','manual','YLimMode','manual');
 
 %% data products:
 % Drawing vectors:
 vh = quiver(U0, V0, Ux, Vy, 0, '-','Color',[.7 .7 1]);
-set(vh, 'Visible',VFLAG);
+set(vh, 'Visible', VFLAG);
 
 % showing alitude color-code line
 sh = surface([Ux Ux], [Vy Vy], [U0 V0], [H H],...
@@ -169,25 +172,27 @@ else
 end
 colormap(ax, cmap);
 hbar = colorbar('eastoutside'); 
-set(hbar,'Position',get(hbar,'Position').*[1.1 1.1 .5 .8],...
-         'FontSize',TextSize,'Visible',CFLAG);
-title(hbar,'km','FontSize',TextSize,'Visible',CFLAG);
+set(hbar,'Position',get(hbar,'Position').*[1 1.1 .5 .8],...
+         'FontSize',TextSize,'Visible', ff(CFLAG));
+title(hbar,'km','FontSize',TextSize,'Visible', ff(CFLAG));
 
 % Writing in canvas selected altitudes:
 [tmp idxh] = arrayfun(@(x) min(abs(x-H)), linspace(.2,max(H),10));
 Hlabel= cellfun(@(x) sprintf('%2.1f',x),num2cell(H(idxh)),'UniformOutput',0);
 htxt  = text(Ux(idxh), Vy(idxh), Hlabel);
-set(htxt,'Visible',HFLAG,'Color','r');
+set(htxt,'Visible', ff(HFLAG), 'Color', 'r');
 
 % Returning structure handles:
 if nargout == 1,
-    hodog.ax = ax;
-    hodog.ch = ch;
-    hodog.rh = rh;
-    hodog.vh = vh;
-    hodog.sh = sh;
-    hodog.hbar = hbar;
-    hodog.Hdata = htxt;
+    hodog.ax = ax; % drawing axis
+    hodog.ch = ch; % concentric grid-circles
+    hodog.rh = rh; % radial grid-lines
+    hodog.AL = Alabel; % labels for the radial lines
+    hodog.RL = Rlabel; % labels for the concentric lines
+    hodog.vh = vh; % vector field
+    hodog.sh = sh; % altitude color-coded line
+    hodog.hbar = hbar; % colorbar for altitude
+    hodog.Hdata = htxt; % altitude labels
     hodog.CFLAG = CFLAG;
     hodog.HFLAG = HFLAG;
     hodog.VFLAG = VFLAG;
@@ -225,7 +230,7 @@ function resampling_hodograph(Ux, Vy, H, h),
         cmap = [0 0 0];
     end
     set(h.hbar,'Visible',h.CFLAG);
-    title(h.hbar,'km','Visible',h.CFLAG);
+    title(h.hbar,'km','Visible', ff(h.CFLAG));
     colormap(h.ax,cmap);
     
     % Updating the Altitude labels along the line
@@ -234,19 +239,26 @@ function resampling_hodograph(Ux, Vy, H, h),
                     'UniformOutput', 0);
         
     arrayfun(@(i) set(h.Hdata(i), 'String', Hlabel{i},...
-                                  'Visible', h.HFLAG,...
+                                  'Visible', ff(h.HFLAG),...
                                   'Position',[Ux(idxh(i)) Vy(idxh(i))]),[1:10])
 
     % Updating the axis' limits:
+    iradial = [1, 45, 90, 135, 180, 225, 270, 315];
     ii = isfinite(Ux) & isfinite(Vy);
     AXmax = max(max(abs(Ux(ii))), max(abs(Vy(ii))) );
-    [xx, yy] = get_circles(AXmax);
-    for i=1:size(xx,2), set(h.ch(i), 'XData', xx(:,i), 'YData', yy(:,i)); end
-    set(h.ax, 'XLim', AXmax*[-1 1], 'YLim',AXmax*[-1 1]);
-    
+    [xx, yy, R] = get_circles(AXmax);
+    for i=1:size(xx,2), set(h.ch(i), 'XData', xx(:,i),...
+                                     'YData', yy(:,i));
+    end
+    set(h.ax, 'XLim', AXmax*[-1 1], 'YLim', AXmax*[-1 1]);
+    set(h.AL, 'XData', 1.1*xx(iradial,end),...
+              'YData', 1.1*yy(iradial,end));
+    set(h.RL, 'XData', 1.01*xx(iradial(2), [1:end-1]),...
+              'YData', 1.1*yy(iradial(2), [1:end-1]),...
+              'String', num2cell(R(1:end-1)));
 end
 
-function [xx, yy] = get_circles(WS)
+function [xx, yy, R] = get_circles(WS)
     Rmax = max(WS);
 
     R = [0:5:10*floor(Rmax/10)];

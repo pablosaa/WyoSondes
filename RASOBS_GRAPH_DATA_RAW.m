@@ -39,8 +39,14 @@ if nspan>nsonde,
 end
 % Here are defined fine-tune parameters Octave/Matlab dependent:
 if exist('OCTAVE_VERSION','builtin'),
-    graphics_toolkit("gnuplot");
-    % Fosi: FontSize.
+    if any(ismember(available_graphics_toolkits , 'qt')),
+        graphics_toolkit('qt');
+    else
+        graphics_toolkit ('fltk');
+        warning(['Sorry, GUI controls not supported for Octave yet, only ' ...
+                 'graph shown :(']);
+    end
+        % Fosi: FontSize.
     FoSi = 16;
     colorlin = summer(nspan);
 else
@@ -330,10 +336,10 @@ function [data, metvar, metadata] = update_matfile(varargin);
     [matfile,matpath] = uigetfile({'*.mat','*.MAT'},...
                                   'Select MAT file to open',...
                                   'MultiSelect','off');
-    load(fullfile(matpath,matfile),'data','metvar','metadata');
-    if ~exist('data','var') | ~exist('metvar','var'),
+    load(fullfile(matpath,matfile), 'data', 'metvar', 'metadata');
+    if ~exist('data', 'var') | ~exist('metvar', 'var'),
         error('Structures "data" and/or "metvar" not found in MAT file');
-    elseif ~exist('metadata','var'),
+    elseif ~exist('metadata', 'var'),
         % Checking whether MEATDATA has been assigned, 
         % otherwise read from function
         warning('METADATA isn''t assigned, default metadata loaded.');

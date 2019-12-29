@@ -57,7 +57,7 @@
 % See: LICENSE
 % ---------------------------------------------------------------
 
-function varargout = RASOBS_DOWNLOAD_DATA_RAW(station, varargin); %year,month,day,hour, varargin);
+function varargout = RASOBS_DOWNLOAD_DATA_RAW(station, varargin);
 
 
 %% CHECKING INPUT VARIABLES
@@ -104,12 +104,20 @@ if ismember(nargin,[5,7,9,11,13]),
     end
   end
 elseif nargin==1,
-	lastprof = datetime('now','TimeZone','UTC');
-	year = lastprof.Year;
+    if exist('OCTAVE_VERSION','builtin'),
+        lastprof = gmtime(time());
+        year = 1900 + lastprof.year;
+	month = lastprof.mon;
+	day = lastprof.mday;
+	hour = floor(lastprof.hour/12)*12;  % either 00 or 12 (hours where RS normaly are available)
+    else
+        lastprof = datetime('now','TimeZone','UTC');
+        year = lastprof.Year;
 	month = lastprof.Month;
 	day = lastprof.Day;
 	hour = floor(lastprof.Hour/12)*12;  % either 00 or 12 (hours where RS normaly are available)
-	disp(['downloading for "' station '" last at ' num2str([year month day hour])]);
+    end
+    disp(['downloading for "' station '" last at ' num2str([year month day hour])]);
 else
   error('Number of input arguments wrong! See help.');
 end
@@ -251,24 +259,33 @@ for YEAR=year;
                             [1:length(NameIndices)],'UniformOutput',false);                      
                 cellfun(@eval, qq);
 
-								if ~matflag & ~csvflag & ~ncdfflag,
-									continue;
-								end
+                if nargin==1,
+                   fp = fopen([tempdir 'RS_' stationname '_' timestamp '.csv'], 'w');
+                   fprintf(fp,'%% %s\n',headerline);
+                   fprintf(fp,'%% %s\n',fields{1}{1});
+                   fprintf(fp,'%% %s\n',fields{1}{2});
+                   fprintf(fp, '%s', tmpstr);
+                   fclose(fp);
+                end
 
-								% Creating PATH_DAT and filename_base to storage data:
-								if isempty(PATH_DAT),
-                  PATH_DAT = ['../../data/RASOBS/'...
-																lower(stationname) '/' ...
-																yyyy '/'];
-								end
-								if exist(PATH_DAT,'dir');
-								else mkdir(PATH_DAT);
-								end;
+                if ~matflag & ~csvflag & ~ncdfflag,
+                    continue;
+                end
+                
+                % Creating PATH_DAT and filename_base to storage data:
+                if isempty(PATH_DAT),
+                    PATH_DAT = ['../../data/RASOBS/'...
+                                lower(stationname) '/' ...
+                                yyyy '/'];
+                end
+                if exist(PATH_DAT,'dir');
+                else mkdir(PATH_DAT);
+                end;
 
-								file_name = [PATH_DAT 'RS_'...
-																			sprintf('Y%04d-%04d_M%02d-%02d_D%02d-%02d_H%02d-%02d',...
-																							year([1,end]),month([1,end]),...
-																							day([1,end]),hour([1,end]))];
+                file_name = [PATH_DAT 'RS_'...
+                             sprintf('Y%04d-%04d_M%02d-%02d_D%02d-%02d_H%02d-%02d',...
+                                     year([1,end]),month([1,end]),...
+                                     day([1,end]),hour([1,end]))];
 
                 %% SAVE DATA as MAT-file
                 if matflag && ~exist([file_name '.mat'],'file'),
@@ -278,7 +295,7 @@ for YEAR=year;
                 if matflag && exist([file_name '.mat'],'file'),
                     save([file_name '.mat'],'-append','data','metvar');
                 end
-                
+
                 %% SAVE DATA as CSV?
                 if csvflag,
                     disp('Storing CSV file...');
@@ -330,10 +347,7 @@ end;   % end over years
 
 %
 
-% $$$         if exist('OCTAVE_VERSION','builtin'),
-% $$$             pkg load netcdf;
-% $$$             disp('NETCDF package loaded... ');
-% $$$         end
+% $$$         
 % $$$         nsonde = length(data);
 % $$$         ncfile = [file_name '.nc'];
 % $$$         for i=1:length(names{1}),
