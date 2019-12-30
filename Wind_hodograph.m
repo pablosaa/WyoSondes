@@ -218,7 +218,8 @@ function resampling_hodograph(Ux, Vy, H, h),
     V0 = zeros(size(Vy));
 
     % Updating the Vector Fields:
-    set(h.vh,'XData',U0,'YData',V0,'UData',Ux,'VData',Vy,'Visible',h.VFLAG);
+    set(h.vh, 'XData', U0, 'YData', V0, 'UData', Ux, 'VData', Vy, ...
+              'Visible', h.VFLAG);
     
     % Updating the Shear line:
     set(h.sh,'XData',[Ux Ux],'YData',[Vy Vy],...
@@ -229,8 +230,8 @@ function resampling_hodograph(Ux, Vy, H, h),
     else
         cmap = [0 0 0];
     end
-    set(h.hbar,'Visible',h.CFLAG);
-    title(h.hbar,'km','Visible', ff(h.CFLAG));
+    set(h.hbar,'Visible', h.CFLAG);
+    title(h.hbar, 'km', 'Visible', h.CFLAG);
     colormap(h.ax,cmap);
     
     % Updating the Altitude labels along the line
@@ -239,7 +240,7 @@ function resampling_hodograph(Ux, Vy, H, h),
                     'UniformOutput', 0);
         
     arrayfun(@(i) set(h.Hdata(i), 'String', Hlabel{i},...
-                                  'Visible', ff(h.HFLAG),...
+                                  'Visible', h.HFLAG,...
                                   'Position',[Ux(idxh(i)) Vy(idxh(i))]),[1:10])
 
     % Updating the axis' limits:
@@ -251,11 +252,13 @@ function resampling_hodograph(Ux, Vy, H, h),
                                      'YData', yy(:,i));
     end
     set(h.ax, 'XLim', AXmax*[-1 1], 'YLim', AXmax*[-1 1]);
-    set(h.AL, 'XData', 1.1*xx(iradial,end),...
-              'YData', 1.1*yy(iradial,end));
-    set(h.RL, 'XData', 1.01*xx(iradial(2), [1:end-1]),...
-              'YData', 1.1*yy(iradial(2), [1:end-1]),...
-              'String', num2cell(R(1:end-1)));
+    for i=1:length(iradial),
+        set(h.AL(i), 'Position', [1.1*xx(iradial(i),end) 1.1*yy(iradial(i),end)]);
+    end
+    for i=1:size(xx,2)-1,
+        set(h.RL(i), 'Position', [1.01*xx(iradial(2), i) 1.1*yy(iradial(2), i)],...
+              'String', num2cell(R(i)));
+    end
 end
 
 function [xx, yy, R] = get_circles(WS)
