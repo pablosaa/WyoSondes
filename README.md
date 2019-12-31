@@ -4,9 +4,27 @@
 
 This is a simple GNU/Octave and MATLAB friendly function to fetch radiosonde data from the publich repository hosted by the University of Wyoming.
 
+## Table of Content
+1. [Introduction](#intro)
+2. [Description](#descript)
+
+   2.1. [Input variables](#inputvar)
+   
+   2.2. [Output variables](#outputvar)
+3. [Data storage](#datastore)
+4. [Usage Example](#useexample)
+5. [Plotting Example](#plotexample)
+6. [Apendix](#appendix)
+
+   6.1. [Other sources](#apx_othersource)
+   
+   6.2. [Octave requirements](#apx_octave_req)
+
+---
+## Introduction <a name="intro"></a>
 This repository has been mainly developed and intensily used with GNU/Octave v4.4.0 under Linux OpenSuse distribution. Some testing has been done for Matlab R2016a (the one I have at office), but some issues might appear with the latest Matlab versions, so any feedbacks are welcome.
 
-### Description
+### Description <a name="descript"></a>
 This GNU Octave/MATLAB function gets the DATA of the soundings (raob) from the Wyoming University internet site (http://weather.uwyo.edu)
 
 The Function can be used by calling one or any combinations of the following set of parameters:
@@ -32,7 +50,7 @@ The following optional arguments are possible:
 >> [data, metvar, {metadata}] = RASOBS_DOWNLOAD_DATA_RAW(station,year,month,day,hour,'matfile',true);
 ```
 where,
-#### INPUT VARIABLES:
+#### INPUT VARIABLES: <a name="inputvar"></a>
 ```
 % station-> (string) Code for the station to download;
 % year  --> (numeric) Range for Year of the date we want to download, e.g. [2015:2018];
@@ -56,7 +74,7 @@ Default options:
 % 'csvfile'->false,
 % 'netcdf'->false.
 ```
-#### OUTPUT VARIABLES:
+#### OUTPUT VARIABLES:<a name="outputvar"></a>
 ```
 % data --> MATLAB Structure variable containing the Radiosonde data and related information. 
 % metvar --> MATLAB Structure variable with Sounding Station Parameters and Indices for every profile.
@@ -71,7 +89,7 @@ In case of unsuccessful downloading (e.g. hour 10 doesn't exist) it returns an e
 station_name --> variable containing a string with the Name of the Station, e.g. 'ENBJ' for the Bjornoya station with code 01028.
 ```
 
-#### DATA STORAGE:
+#### DATA STORAGE:<a name="datastore"></a>
 
 Downloaded data can be archived in one or any combination of following file formats -> CSV, NetCDF or MATLAB binary format. Depending on the input values a data archive will have a generic name like
 ```
@@ -128,7 +146,7 @@ http://weather.uwyo.edu/upperair/columns.html
 Similarly a detailed description of the Radiosonde indices is provided by the Wyoming University web site:
 http://weather.uwyo.edu/upperair/indices.html
 
-## USAGE EXAMPLE
+## USAGE EXAMPLE<a name="useexample"></a>
 This is an example to download data from the Station Norderney with station number '10113' for the year 2015, the months of Mai, June and July (`[5:7]`) and all available hours i.e. 00 and 12Z (`[0,12]`) and storaging the data as NetCDF file.
 ```
 >> [data,metvar] = RASOBS_DOWNLOAD_DATA_RAW('10113',2015,[5:7],[1:31],[00,12],'netcdf',true);
@@ -154,7 +172,7 @@ Variables in the current scope:
 ```
 The data will the then storaged in a NetCDF file in the default directory `../data/norderney/2015/` with a file name `RS_Y2015-2015_M05-07_D01-31_H00-12.nc`.
 
-## SIMPLE PLOTTING EXAMPLE
+## SIMPLE PLOTTING EXAMPLE<a name="plotexample"></a>
 To help visualize the downloaded Radiosonde data, a simple GNU Octave/Matlab script helps to navigate along the profiles. This script is more useful when a large number of profiles are present, for less than 5 or single profiles it isn't worth it.
 
 The visualization script has been tested and used under GNU/Octave v4.4.0 and Matlab R2016a.
@@ -193,13 +211,27 @@ and by selecting any profile variable a 2D time series can be easily plotted, fo
 The visualization for the .csv files is not supported.
 
 
-## NOTE: Other Sources of Radiosonde data
+## APPENDIX<a name="appendix"></a>
+### Other Sources of Radiosonde data<a name="apx_othersource">
 #### * NOAA ESRL Radiosonde Database
 NOAA's Radiosonde data archive including a good ![web based GUI](https://ruc.noaa.gov/raobs/) to download a series of profiles with four differnet file formats, namely FSL ascii, original FSL ascii, FAA604 WMO/GTS ascii and netCDF format.
 General information and link to data archive is ![here](https://ruc.noaa.gov/raobs/General_Information.html)
 
 #### * IGRA Weather Balloon
 Alternative Radiosonde data can be found at the ![Integrated Global Radiosonde Archive (IDRA)](https://www.ncdc.noaa.gov/data-access/weather-balloon/integrated-global-radiosonde-archive), with most of the stations also covered by Wyoming University there are others which are additionally available at IDRA data bank. The IDRA data files, however, can be accessed directly from their FTP server as compressed files for the entire period of availability. Therefore a tool like WyoSonde is not needed. 
+
+### Octave requirements<a name="apx_octave_req"></a>
+GUI script ```ROAS_GRAPH_DATA_RAW``` under GNU/Octave requires QT to be enable. In Octave command line write:
+```
+  > available_graphics_toolkits
+      ans =      {
+        [1,1] = fltk
+        [1,2] = gnuplot
+        [1,3] = qt
+      }
+    > graphics_toolkit("qt")
+```
+to verify whether or not your GNU/Octave installation support QT.
 
 ---
 (c) 2018 [Pablo Saavedra G.](mailto:pablo.saa@uib.no),<br> Geophysical Institute,<br> UNIVERSITY OF BERGEN
