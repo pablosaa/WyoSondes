@@ -15,6 +15,8 @@ function [varargout] = RASOBS_GRAPH_DATA_RAW(varargin)
 if nargin==0,
     % open file browser to load .mat file
     [data0, metvar, metadata] = update_matfile();
+elseif nargin==1,
+    [data0, metvar, metadata] = update_matfile(varargin{1});
 elseif nargin==2,
     data0 = varargin{1};
     metvar = varargin{2};
@@ -134,7 +136,7 @@ if Nobs==1,
     disp('With only one profile no time-series needed');
     ha.p2d = pcolor([]);
 else
-    ha.p2d = pcolor(TimePROF,1e-3*PROFILER(:,:,2),PROFILER(:,:,3));
+    ha.p2d = pcolor(repmat([1:Nobs]',1,size(PROFILER,2)),1e-3*PROFILER(:,:,2),PROFILER(:,:,3)); %TimePROF
     %HH = 1e-3*PROFILER(:,:,2);
     %CC = PROFILER(:,:,3);
     %ha.p2d = scatter(TimePROF(:),HH(:),95,CC(:),'s','filled');
@@ -142,32 +144,36 @@ end
 %axis xy; 
 shading flat;
 axis tight;
-tmp = get(ha.ax(2),'Position').*[1 0.9 1 1.04];
+tmp = get(ha.ax(2), 'Position').*[1 0.9 1 1.04];
 ha.cob = colorbar;
-set(ha.ax(2),'Position',tmp,'XLim',Tnumobs([1 end]),'XTickLabel',[]);
-set(ha.cob,'Position',[tmp(1)+tmp(3)+0.005 tmp(2) 0.025 tmp(4)],...
-           'FontSize',FoSi);
+set(ha.ax(2), 'Position', tmp, 'XLim', [1 Nobs]);
+set(ha.cob, 'Position', [tmp(1)+tmp(3)+0.005 tmp(2) 0.025 tmp(4)],...
+            'FontSize', FoSi);
 caxis([-30 25]);
 ylabel('Height a.g.l. [km]','FontSize',FoSi);
 
 %% Sub-plot 3 is for time series of Radiosonde Indices, default CAPE
 ha.ax(3) = subplot(6,4,[21:24]);%,6);
 hold on;
-ha.htl = plot(Tnumobs(isonde)*[1 1],[min(yvar) max(yvar)],...
-              '--k','LineWidth',2);
-ha.hts = plot(Tnumobs,yvar,'-','LineWidth',1.5,...
+ha.htl = plot(Tnumobs(isonde)*[1 1], [min(yvar) max(yvar)],...
+              '--k', 'LineWidth', 2);
+ha.hts = plot(Tnumobs, yvar, '-', 'LineWidth', 1.5,...
               'Tag', metadata.RSINDICES{tsvar,1});
-datetick('x','mm/dd');
-tmp = get(ha.ax(3),'Position').*[1 1 1 1.1];
-set(ha.ax(3),'Box','on','YGrid','on','FontSize',FoSi,'Position',tmp);
-ha.tsl = legend(ha.hts,metadata.RSINDICES{tsvar,2});
-set(ha.tsl,'FontSize',FoSi,'Color','none');
-ylabel(sprintf('%s [%s]',metadata.RSINDICES{tsvar,[1,3]}),...
-       'FontSize',FoSi);
-xlabel('Observation date Month/Day','FontSize',FoSi);
-tmp = get(ha.ax(3),'XTick');
-set(ha.ax(2),'XTick',tmp,'XLim',Tnumobs([1 end]));
-set(ha.ax,'TickDir','out','Box','on','FontSize',FoSi,'LineWidth',2);
+
+tmp = get(ha.ax(3), 'Position').*[1 1 1 1.1];
+set(ha.ax(3), 'Box', 'on', 'YGrid', 'on', 'FontSize', FoSi, 'XLim', Tnumobs([1 end]),...
+              'Position', tmp, 'XTick',Tnumobs([1:fix(Nobs/10):end]), ...
+              'XTickLabel', datestr(Tnumobs([1:fix(Nobs/10):end]), 'mm/dd'));
+
+ha.tsl = legend(ha.hts, metadata.RSINDICES{tsvar,2});
+set(ha.tsl, 'FontSize', FoSi, 'Color', 'none');
+ylabel(sprintf('%s [%s]', metadata.RSINDICES{tsvar,[1,3]}),...
+       'FontSize', FoSi);
+xlabel('Observation date Month/Day', 'FontSize', FoSi);
+tmp = get(ha.ax(3), 'XTick');
+%set(ha.ax(2),'XTick',tmp,'XLim',Tnumobs([1 end]));
+set(ha.ax, 'TickDir', 'out', 'Box', 'on', 'FontSize', FoSi, ...
+           'LineWidth', 2);
 clear tmp;
 
 %xlabel('Observation date Month/Day','FontSize',15);
@@ -189,7 +195,7 @@ ha.tdate = uicontrol('style','text','Units','normalized',...
 ha.SliderH = uicontrol('style','slider','Units','normalized',...
                        'Position',[0.68 0.95 0.3 0.0234],...
                        'min',1, 'max', length(xvar),'Value',isonde,...
-                       'SliderStep',[0.005 0.05],...
+                       'SliderStep',[0.05 0.05],...
                        'Callback',{@update_time0,ha,Tnumobs,data}); 
 
 % ------ BUTTONS ------------------------------
@@ -333,10 +339,21 @@ end
 % Sub-function to load MAT file with structure variables
 function [data, metvar, metadata] = update_matfile(varargin);
     
-    [matfile,matpath] = uigetfile({'*.mat','*.MAT'},...
-                                  'Select MAT file to open',...
-                                  'MultiSelect','off');
-    load(fullfile(matpath,matfile), 'data', 'metvar', 'metadata');
+    if nargin==0,
+        [matfile,matpath] = uigetfile({'*.mat','*.MAT'},...
+                                      'Select MAT file to open',...
+                                      'MultiSelect','off');
+        fname = fullfile(matpath,matfile);
+    else
+        fname = varargin{1};
+    end
+    
+    if exist(fname, 'file'),
+        load(fname, 'data', 'metvar', 'metadata');
+    else
+        error([fname ' can not be load!']);
+    end
+    
     if ~exist('data', 'var') | ~exist('metvar', 'var'),
         error('Structures "data" and/or "metvar" not found in MAT file');
     elseif ~exist('metadata', 'var'),
@@ -347,12 +364,12 @@ function [data, metvar, metadata] = update_matfile(varargin);
         %[ProfileMeta,NameIndices,DescriptionIndices,UnitsIndices] = 
     
     else
-        disp([matfile ' loaded ;D']);
+        disp([fname ' loaded ;D']);
     end
 
-    if nargin>0,
-        RASOBS_GRAPH_DATA_RAW(data,metvar,metadata);
-    end
+    %if nargin>0,
+    %    RASOBS_GRAPH_DATA_RAW(data,metvar,metadata);
+    %end
     
     return;
 end
@@ -397,18 +414,18 @@ function [PROFILER, TimePROF, Tnumobs] = InitializeProfiler(data,OBST,H_top);
     % index of the highest layer below 15km:
     %hmax = arrayfun(@(i) max(find(data(i).HGHT<H_top)),[1:Nobs]);
     hmax = 0;
+    PROFILER = NaN(Nobs, 100, nvar); %zeros(Npro, 100, nvar)*NaN;
     for i=1:Nobs,
         tmp = max(find(data(i).HGHT<H_top));
         if ~isempty(tmp), hmax(i) = tmp; end
-    end
-    PROFILER = zeros(Npro, max(hmax), nvar)*NaN;
-    for i=1:Nobs,
+
         [tmp, idx] = min(abs(Tnumobs(i)-Tnumpro));
         for j=1:nvar,
-            eval(['PROFILER(idx,1:hmax(i),j) = data(i).'...
+            eval(['PROFILER(i, 1:hmax(i), j) = data(i).'...
                   names{j} '(1:hmax(i));']);
         end
     end
+    if max(hmax)<100, PROFILER(:,max(hmax)+1:end,:) = []; end
     TimePROF = repmat(Tnumpro,1,max(hmax));
 
     return;

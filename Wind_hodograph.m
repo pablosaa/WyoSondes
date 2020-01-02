@@ -172,7 +172,7 @@ else
 end
 colormap(ax, cmap);
 hbar = colorbar('eastoutside'); 
-set(hbar,'Position',get(hbar,'Position').*[1 1.1 .5 .8],...
+set(hbar,'Position',get(hbar,'Position').*[1.05 1.01 .5 .8],...
          'FontSize',TextSize,'Visible', ff(CFLAG));
 title(hbar,'km','FontSize',TextSize,'Visible', ff(CFLAG));
 
@@ -252,19 +252,23 @@ function resampling_hodograph(Ux, Vy, H, h),
                                      'YData', yy(:,i));
     end
     set(h.ax, 'XLim', AXmax*[-1 1], 'YLim', AXmax*[-1 1]);
+
     for i=1:length(iradial),
         set(h.AL(i), 'Position', [1.1*xx(iradial(i),end) 1.1*yy(iradial(i),end)]);
     end
-    for i=1:size(xx,2)-1,
+    
+    set(h.RL, 'String', '');
+    for i=1:length(R)-1,
+        RadialString = num2cell(R(i));
         set(h.RL(i), 'Position', [1.01*xx(iradial(2), i) 1.1*yy(iradial(2), i)],...
-              'String', num2cell(R(i)));
+                     'String', RadialString );
     end
 end
 
 function [xx, yy, R] = get_circles(WS)
     Rmax = max(WS);
 
-    R = [0:5:10*floor(Rmax/10)];
+    R = [0:5:10*round(Rmax/10)];
 
     if length(R)>6,
         R = R(1:2:end);
