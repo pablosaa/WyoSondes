@@ -172,21 +172,31 @@ Variables in the current scope:
 ```
 The data will the then storaged in a NetCDF file in the default directory `../data/norderney/2015/` with a file name `RS_Y2015-2015_M05-07_D01-31_H00-12.nc`.
 
-## SIMPLE PLOTTING EXAMPLE<a name="plotexample"></a>
+## SIMPLE VISUALIZATION EXAMPLE<a name="plotexample"></a>
 To help visualize the downloaded Radiosonde data, a simple GNU Octave/Matlab script helps to navigate along the profiles. This script is more useful when a large number of profiles are present, for less than 5 or single profiles it isn't worth it.
 
 The visualization script has been tested and used under GNU/Octave v4.4.0 and Matlab R2016a.
 
 ### For MAT binary files
-Run the script from workspace as follow:
+Three options to start the GUI visualization script:
+
+1. From workspace as follow:
 ```
 >> RASOBS_GRAPH_DATA_RAW;
 ```
-and a file browser will pop-up to select a `.mat` file with the Radiosonde data, or when the data are alredy loaded as workspace variable, use
+and a file browser will pop-up to select a `.mat` file with the downloaded Radiosonde data.
+
+2. Directly read the file `RS_Y2015-2015_M05-07_D01-31_H00-12.mat` locate at `/tmp/data/` do:
+```  
+>> RASOBS_GRAPH_DATA_RAW('/tmp/data/RS_Y2015-2015_M05-07_D01-31_H00-12.mat');
+```
+3. When the data are alredy loaded as workspace variable, use
 ```  
 >> RASOBS_GRAPH_DATA_RAW(data,metvar);
 ```
-where `data` is the structure variable with the profiles, and `metvar` is the structure variable with the Radiosonde indexed (see above). The script creates a Figure as it is shown in the following screenshot:
+where `data` is the structure variable with the profiles, and `metvar` is the structure variable with the Radiosonde indexed (see above).
+
+The script creates a Figure as it is shown in the following screenshot:
 ```
 >> ha = RASOBS_GRAPH_DATA_RAW(data,metvar);
 ```
