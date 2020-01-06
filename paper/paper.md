@@ -1,6 +1,11 @@
 ---
-title: 'WyoSondes: GNU Octave/MATLAB Automatic fetching radiosonde time-series
-from the Wyoming University data repository'
+title: 'WyoSondes: GNU/Octave and MATLAB© automatic fetching radiosonde time-series from the Wyoming University data repository'
+authors:
+  - name: "Pablo Saavedra Garfias"
+    orcid: 0000-0002-4596-946X
+    affiliation: 1 # (Multiple affiliations must be quoted)
+  - name: "Jochen Reuder"
+    affiliation: "1, 2"
 tags:
   - Octave 
   - Matlab
@@ -9,12 +14,6 @@ tags:
   - Meteorology
   - Climate
   - Wyoming University
-authors:
-  - name: Pablo Saavedra Garfias
-    orcid: 0000-0002-4596-946X
-    affiliation: 1 # (Multiple affiliations must be quoted)
-  - name: Jochen Reuder
-    affiliation: "1, 2"
 affiliations:
  - name: Geophysical Institute, University of Bergen
    index: 1
@@ -27,7 +26,7 @@ bibliography: paper.bib
 
 # Summary
 
-Atmospheric profiles are mainly obtained via radiosonde which are a fundamental source of in-situ information of
+Atmospheric soundings are extremely useful tools for weather analysis and forecasting. Radiosondes are a fundamental source of in-situ information of
 the states of the troposphere and stratosphere.
 The observed profiles of temperature, humidity and wind are essential for the development of modern meteorology, and its current practice of modelling and forecasting of the atmosphere (@brettle_back_2003). Thus radiosonde data is widely needed as input for numerical weather
 prediction models, climate studies, aviation, environmental monitoring, etc.  (@galvin_back_2003).
@@ -41,16 +40,17 @@ Data are then shared and format-homogenized to be available from the Wyoming Uni
 friendly web GUI which allows the selection of station and date range to be
 retrieved as a simple ASCII web-site. However when large time series of
 radiosonde data from various stations are needed, then an automatic approach
-is more suitable to build large datasets.
+is more suitable to build large dataset.
 
-```WyoSonde``` is a simple GNU-Octave and MATLAB function to automatically
-fetch the atmospheric radiosonde data from the public data repository hosted by the University of Wyoming (@wyoming_website).
+Soundings are an extremely powerful weather analysis and forecasting tool that can provide a great amount of information. First, the reader is taught how to identify cloud layers, tropopause height, and temperature advection from plotted soundings.
+
+```WyoSonde``` is a GNU/Octave and MATLAB© function to automatically fetch the atmospheric radiosonde data from the University of Wyoming public data repository (@wyoming_website). 
 
 Radiosonde data are widely required by numerous applications like in meteorology for weather forecast around the globe and climate studies by characterization of the climatology, and further uses in data assimilation, polution studies, among others (@seidel_estimating_2010).
 
 The University of Wyoming in USA hosts one of the most important sources of radiosonde data repositories in the world, with global coverage and freely available to download.
 
-This repository has been mainly developed and intensively used with GNU/Octave v4.4.0 under Linux OpenSuse distribution. Additional testing has been done for Matlab R2016a.
+This repository has been mainly developed and intensively used with GNU/Octave v4.4.0 under Linux OpenSuse distribution. Additional testing has been done for Matlab© R2016a.
 
 # Acknowledgments
 We want to thank the Wyoming University for making the radiosonde data freely
