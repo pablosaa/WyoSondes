@@ -26,8 +26,8 @@ bibliography: paper.bib
 
 # Summary
 
-Atmospheric soundings are extremely useful tools for weather analysis and forecasting. Radiosondes are a fundamental source of in-situ information of
-the states of the troposphere and stratosphere.
+Atmospheric soundings are extremely useful tools for weather analysis and forecasting. Radiosonde is a fundamental source of in-situ information of
+the states of the troposphere and stratosphere (@milrad_14_2018).
 The observed profiles of temperature, humidity and wind are essential for the development of modern meteorology, and its current practice of modelling and forecasting of the atmosphere (@brettle_back_2003). Thus radiosonde data is widely needed as input for numerical weather
 prediction models, climate studies, aviation, environmental monitoring, etc.  (@galvin_back_2003).
 
@@ -44,7 +44,7 @@ is more suitable to build large dataset.
 
 Soundings are an extremely powerful weather analysis and forecasting tool that can provide a great amount of information. First, the reader is taught how to identify cloud layers, tropopause height, and temperature advection from plotted soundings.
 
-```WyoSonde``` is a GNU/Octave and MATLAB© function to automatically fetch the atmospheric radiosonde data from the University of Wyoming public data repository (@wyoming_website). 
+```WyoSonde``` is a GNU/Octave (@octave_manual) and MATLAB© function to automatically fetch the atmospheric radiosonde data from the University of Wyoming public data repository (@wyoming_website). 
 
 Radiosonde data are widely required by numerous applications like in meteorology for weather forecast around the globe and climate studies by characterization of the climatology, and further uses in data assimilation, polution studies, among others (@seidel_estimating_2010).
 
