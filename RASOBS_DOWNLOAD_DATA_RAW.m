@@ -107,7 +107,7 @@ elseif nargin==1,
     if exist('OCTAVE_VERSION','builtin'),
         lastprof = gmtime(time());
         year = 1900 + lastprof.year;
-	month = lastprof.mon;
+	month = lastprof.mon + 1;
 	day = lastprof.mday;
 	hour = floor(lastprof.hour/12)*12;  % either 00 or 12 (hours where RS normaly are available)
     else
@@ -242,7 +242,7 @@ for YEAR=year;
                 glovalues = globaltmp{2};
 		
                 % Changing Date format from "YYMMDD/hhmm"->"YYMMDD.hhmm"
-								idxtmp = find(strcmp(description,'Observation time'));
+		idxtmp = find(strcmp(description,'Observation time'));
                 tmp = sscanf(strrep(glovalues{idxtmp},'/','.'),'%06d.%02d%02d');
                 tmp = tmp(1)+[1/24 1/3600]*tmp(2:3);
 
@@ -287,7 +287,7 @@ for YEAR=year;
                                      year([1,end]),month([1,end]),...
                                      day([1,end]),hour([1,end]))];
 
-                %% SAVE DATA as MAT-file
+                %% SAVE DATA as MAT-file (updates the file when already exist)
                 if matflag && ~exist([file_name '.mat'],'file'),
                     save([file_name '.mat'],'-v7','data','metvar','metadata',...
                          'stationname','locationname','station');
@@ -314,84 +314,34 @@ for YEAR=year;
     end;   % end over months
 end;   % end over years
 
-    %% Checking whether any data has been downloaded:
-    if(idx_hr==0),
-        warning('No Profile could have been found!');
-        for i=1:nargout,
-            varargout{i} = [];
-        end
-        return;
-    end
+%% Checking whether any data has been downloaded:
+if(idx_hr==0),
+  warning('No Profile could have been found!');
+  for i=1:nargout,
+    varargout{i} = [];
+  end
+  return;
+end
          
-    %% passing output variables to workspace:
-    for i=1:nargout,
-        outputvar = {'data','metvar','metadata','stationname'};
-        if i>3,
-            warning('too many output variables! Three are max.');
-            break;
-        end
-        eval(['varargout{i} = ' outputvar{i} ';']);
-    end
+%% passing output variables to workspace:
+for i=1:nargout,
+  outputvar = {'data','metvar','metadata','stationname'};
+  if i>3,
+    warning('too many output variables! Three are max.');
+    break;
+  end
+  eval(['varargout{i} = ' outputvar{i} ';']);
+end
 
-    %% SAVE DATA as NetCDF
+%% SAVE DATA as NetCDF
 
-    if ncdfflag,
-        WyoRS_mat2netcdf('data',data,'metvar',metvar,...
-                         'stationname',stationname,'station',station,...
-                         'ncdffile',[file_name '.nc']);
-    end   % end if NetCDF
+if ncdfflag,
+  WyoRS_mat2netcdf('data',data,'metvar',metvar,...
+                   'stationname',stationname,'station',station,...
+                   'ncdffile',[file_name '.nc']);
+end   % end if NetCDF
     
-    return;
+return;
 
 % end of function
 
-%
-
-% $$$         
-% $$$         nsonde = length(data);
-% $$$         ncfile = [file_name '.nc'];
-% $$$         for i=1:length(names{1}),
-% $$$             nccreate(ncfile,names{1}{i},...
-% $$$                      'Dimensions',{'nsonde',nsonde,'levels',Inf},...
-% $$$                      'FillValue',NaN,'Format','netcdf4');
-% $$$             tmp = strfind(ProfileMeta,names{1}{i});  %strfind(names{1}{i},ProfileMeta);
-% $$$             idxtmp = find(arrayfun(@(k) ~isempty(tmp{k,1}),...
-% $$$                                    [1:length(ProfileMeta)]));
-% $$$             for j=1:nsonde,
-% $$$                 eval(['ncwrite(ncfile,names{1}{i},transpose(data(j).'...
-% $$$                       names{1}{i} '),[j,1]);']);
-% $$$             end
-% $$$             ncwriteatt(ncfile,names{1}{i},'ShortName', ProfileMeta{idxtmp,1});
-% $$$             ncwriteatt(ncfile,names{1}{i},'LongName', ProfileMeta{idxtmp,2});
-% $$$             ncwriteatt(ncfile,names{1}{i},'units', ProfileMeta{idxtmp,3});
-% $$$                 %units{1}{i});
-% $$$ 
-% $$$         end  % end over variable names
-% $$$         for i=1:length(NameIndices),
-% $$$             if any([strcmp(NameIndices{i},'SLAT'),...
-% $$$                     strcmp(NameIndices{i},'SLON'),...
-% $$$                     strcmp(NameIndices{i},'SELV')])
-% $$$                 continue;
-% $$$             end
-% $$$             nccreate(ncfile,NameIndices{i},...
-% $$$                     'Dimensions',{'nsonde',nsonde},...
-% $$$                     'FillValue',NaN,'Format','netcdf4');
-% $$$             eval(['ncwrite(ncfile,NameIndices{i},'...
-% $$$                     'transpose(metvar.' NameIndices{i} '));']);
-% $$$             ncwriteatt(ncfile,NameIndices{i},'units',...
-% $$$                        UnitsIndices{i});
-% $$$             ncwriteatt(ncfile,NameIndices{i},'LongName',...
-% $$$                        DescriptionIndices{i});
-% $$$ 
-% $$$             
-% $$$         end
-% $$$         ncwriteatt(ncfile,'/','Observatory Name',[stationname '_' locationname]);
-% $$$         ncwriteatt(ncfile,'/','Station Code Number',station);
-% $$$         ncwriteatt(ncfile,'/','Observatory Latitude [deg]',metvar.SLAT(1));
-% $$$         ncwriteatt(ncfile,'/','Observatory Longitude [deg]',metvar.SLON(1));
-% $$$         ncwriteatt(ncfile,'/','Observatory Altitude [m]',metvar.SELV(1));
-% $$$         ncwriteatt(ncfile,'/','Source','http://weather.uwyo.edu/cgi-bin/sounding');
-% $$$         ncwriteatt(ncfile,'/','Indices Description',...
-% $$$                    'http://weather.uwyo.edu/upperair/indices.html');
-% $$$         ncwriteatt(ncfile,'/','Contact','Pablo.Saavedra@uib.no');
-% $$$         ncwriteatt(ncfile,'/','Institution','Geophysical Institute, Uni-Bergen');

@@ -48,10 +48,12 @@ if exist('OCTAVE_VERSION','builtin'),
         warning(['Sorry, GUI controls not supported for Octave yet, only ' ...
                  'graph shown :(']);
     end
-        % Fosi: FontSize.
-    FoSi = 16;
+				% Fosi: FontSize.
+    FigPosition = [20 5 1000 950];
+    FoSi = 17;
     colorlin = summer(nspan);
 else
+  FigPosition = [20 5 1010 955];
     FoSi = 11;
     colorlin = summer(nspan);
 end
@@ -88,11 +90,11 @@ yvar = getfield(metvar, metadata.RSINDICES{tsvar,1});
 %% Plotting figure, axes and GUIs 
 % creating the default figure:
 figure;
-set(gcf,'Position',[20 5 1000 950],'PaperPositionMode','auto');
+set(gcf, 'Position', FigPosition, 'PaperPositionMode', 'auto');
 clf;
 
 %% Sub-plot 1 for the individual profiles
-ha.ax(1) = subplot(6,4,[1,2,5,6,9,10]);
+ha.ax(1) = subplot(6, 4, [1,2,5,6,9,10]);
 hold on;
 ha.hh = arrayfun(@(i){plot(data(i).TEMP,1e-3*data(i).HGHT,...
                            'DisplayName',sprintf('T0 %+2d',i-isonde),...
@@ -104,9 +106,9 @@ ha.hh = arrayfun(@(i){plot(data(i).TEMP,1e-3*data(i).HGHT,...
 
 maxz = 1e-3*max(arrayfun(@(i) max([data(i).HGHT]),rspan));
 set(ha.hh{span+1},'LineWidth',3);  % {isonde-span}
-xlabel(sprintf('%s [%s]',metadata.PROFILE{idxvar,2:3}),'FontSize',FoSi);
-ylabel(sprintf('%s [K%s]',metadata.PROFILE{2,2:3}),'FontSize',FoSi);
-tmp = get(ha.ax(1),'Position').*[1 1 1.1 1];
+xlabel(sprintf('%s [%s]', metadata.PROFILE{idxvar,2:3}), 'FontSize',FoSi);
+ylabel(sprintf('%s [K%s]', metadata.PROFILE{2,2:3}), 'FontSize',FoSi);
+tmp = get(ha.ax(1), 'Position').*[1 1 1.1 1];
 i = [nspan:-1:1];  % to get the middle line to the top
 i(span+1) = '';
 i = [span+1, i];   % putting the middle line to the top
